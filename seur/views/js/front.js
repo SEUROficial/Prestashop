@@ -33,13 +33,13 @@ $(document).ready(function () {
     var payment_forms = $("form#payment-form");
     payment_forms.each(function(index) {
         var aux = $(this).attr('action');
-        if (is_seur_cod(aux)) {
+        if (aux && is_seur_cod(aux)) {
             hide_others = true;
         }
     });
     payment_forms.each(function(index) {
         var aux = $(this).attr('action');
-        if (hide_others && is_cod(aux)) {
+        if (aux && hide_others && is_cod(aux)) {
             $('#payment-option-'+eval(index+1)+'-container').hide();
         }
     });
@@ -48,13 +48,13 @@ $(document).ready(function () {
     var payment_modules = $(".payment_module");
     payment_modules.each(function(index) {
         var aux = $(this).find('a').attr('href');
-        if (is_seur_cod(aux)) {
+        if (aux && is_seur_cod(aux)) {
             hide_others = true;
         }
     });
     payment_modules.each(function(index) {
         var aux = $(this).find('a').attr('href');
-        if (hide_others && is_cod(aux)) {
+        if (aux && hide_others && is_cod(aux)) {
             $(this).hide();
         }
     });

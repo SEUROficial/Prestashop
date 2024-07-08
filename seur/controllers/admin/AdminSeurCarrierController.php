@@ -176,6 +176,7 @@ class AdminSeurCarrierController extends ModuleAdminController
                 'url_controller' => $this->context->link->getAdminLink('AdminSeurShipping', true),
                 'img_path' => $this->module->getPath() . 'views/img/',
                 'module_path' => 'index.php?controller=AdminModules&configure=' . $this->module->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Tab::getIdFromClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
+                'seur_url_basepath' => $this->context->link->getBaseLink($this->context->shop->id),
             ));
 
         $smarty = $this->context->smarty;
@@ -195,6 +196,7 @@ class AdminSeurCarrierController extends ModuleAdminController
                 'url_carrier' => $this->context->link->getAdminLink('AdminCarriers', true),
                 'img_path' => $this->module->path . 'views/img/',
                 'module_path' => 'index.php?controller=AdminModules&configure=' . $this->module->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Tab::getIdFromClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
+                'seur_url_basepath' => $this->context->link->getBaseLink($this->context->shop->id),
             ));
 
 
@@ -320,34 +322,6 @@ class AdminSeurCarrierController extends ModuleAdminController
 
             Tools::redirectAdmin($this->context->link->getAdminLink('AdminSeurCarrier'));
         }
-    }
-
-    public function ajaxProcessServices()
-    {
-        $id_service = Tools::getValue('id_service');
-
-        $sql = "SELECT id_seur_services, name FROM `" . _DB_PREFIX_ . "seur2_services` WHERE id_seur_services_type =" . (int)$id_service;
-        $services = Db::getInstance()->executeS($sql);
-
-        echo json_encode(array(
-            'success' => true,
-            'services' => $services
-        ));
-        die();
-    }
-
-    public function ajaxProcessProducts()
-    {
-        $id_service = Tools::getValue('id_service');
-
-        $sql = "SELECT id_seur_product, name FROM `" . _DB_PREFIX_ . "seur2_products` WHERE id_seur_services_type =" . (int)$id_service;
-        $products = Db::getInstance()->executeS($sql);
-
-        echo json_encode(array(
-            'success' => true,
-            'products' => $products
-        ));
-        die();
     }
 
 }

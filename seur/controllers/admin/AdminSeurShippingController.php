@@ -440,8 +440,8 @@ class AdminSeurShippingController extends ModuleAdminController
                     'direccion_consignatario' => $direccion,
                     'consignee_town' => $seur_order->city,
                     'codPostal_consignatario' => $post_code,
-                    'telefono_consignatario' => (!empty($seur_order->phone) ? $seur_order->phone : $seur_order->phone_mobile),
-                    'movil' => (!empty($seur_order->phone_mobile) ? $seur_order->phone_mobile : $seur_order->phone),
+                    'telefono_consignatario' => SeurLib::cleanPhone(!empty($seur_order->phone) ? $seur_order->phone : $seur_order->phone_mobile),
+                    'movil' => SeurLib::cleanPhone(!empty($seur_order->phone_mobile) ? $seur_order->phone_mobile : $seur_order->phone),
                     'name' => $name,
                     'companyia' => (!empty($seur_order->company) ? $seur_order->company : ''),
                     'email_consignatario' => Validate::isLoadedObject($customer) ? $customer->email : '',
@@ -482,8 +482,8 @@ class AdminSeurShippingController extends ModuleAdminController
                         'direccion_consignatario' => $direccion,
                         'consignee_town' => $datospos['city'],
                         'codPostal_consignatario' => $datospos['postal_code'],
-                        'telefono_consignatario' => (!empty($seur_order->phone) ? $seur_order->phone : $seur_order->phone_mobile),
-                        'movil' => (!empty($seur_order->phone_mobile) ? $seur_order->phone_mobile : $seur_order->phone),
+                        'telefono_consignatario' => SeurLib::cleanPhone(!empty($seur_order->phone) ? $seur_order->phone : $seur_order->phone_mobile),
+                        'movil' => SeurLib::cleanPhone(!empty($seur_order->phone_mobile) ? $seur_order->phone_mobile : $seur_order->phone),
                         'name' => $name,
                         'companyia' => $datospos['company'],
                         'email_consignatario' => Validate::isLoadedObject($customer) ? $customer->email : '',
@@ -612,8 +612,8 @@ class AdminSeurShippingController extends ModuleAdminController
         $peso           = (float)Tools::getvalue('peso');
         $firstname      = Tools::getvalue('firstname');
         $lastname       = Tools::getvalue('lastname');
-        $phone          = Tools::getvalue('phone');
-        $phone_mobile   = Tools::getvalue('phone_mobile');
+        $phone          = SeurLib::cleanPhone(Tools::getvalue('phone'));
+        $phone_mobile   = SeurLib::cleanPhone(Tools::getvalue('phone_mobile'));
         $dni            = Tools::getvalue('dni');
         $other          = Tools::getvalue('other');
         $address1       = Tools::getvalue('address1');
@@ -623,6 +623,9 @@ class AdminSeurShippingController extends ModuleAdminController
         $id_country     = (int)Tools::getvalue('id_country');
         $id_state       = (int)Tools::getvalue('id_state');
         $id_seur_ccc    = (int)Tools::getvalue('id_seur_ccc');
+        $product    = (int)Tools::getvalue('product');
+        $service    = (int)Tools::getvalue('service');
+        $insured    = (int)Tools::getvalue('insured');
 
         $seur_order = SeurOrder::getByOrder($id_order);
         $seur_order->numero_bultos  = $num_bultos;
@@ -637,9 +640,12 @@ class AdminSeurShippingController extends ModuleAdminController
         $seur_order->address2       = pSQL($address2);
         $seur_order->postcode       = pSQL($postcode);
         $seur_order->city           = pSQL($city);
-        $seur_order->id_country     = (int)$id_country;
-        $seur_order->id_state       = (int)$id_state;
-        $seur_order->id_seur_ccc    = (int)$id_seur_ccc;
+        $seur_order->id_country     = $id_country;
+        $seur_order->id_state       = $id_state;
+        $seur_order->id_seur_ccc    = $id_seur_ccc;
+        $seur_order->product        = $product;
+        $seur_order->service        = $service;
+        $seur_order->insured        = $insured;
 
         $seur_order->save();
     }
@@ -657,7 +663,12 @@ class AdminSeurShippingController extends ModuleAdminController
             }
 
             $order = new Order((int)$id_order);
-            $order_payment = OrderPayment::getByOrderId($id_order)[0];
+            $order_payment = OrderPayment::getByOrderReference($order->reference);
+            if (isset($order_payment[0])) {
+                $order_payment = $order_payment[0];
+            } else {
+                $order_payment = null;
+            }
             $address_delivery = new AddressCore($order->id_address_delivery);
             $cookie = $this->context->cookie;
             $newcountry = new Country($address_delivery->id_country, (int)$cookie->id_lang);
@@ -699,8 +710,8 @@ class AdminSeurShippingController extends ModuleAdminController
             $seur_order->address1 = $address_delivery->address1;
             $seur_order->address2 = $address_delivery->address2;
             $seur_order->postcode = $address_delivery->postcode;
-            $seur_order->phone = $address_delivery->phone;
-            $seur_order->phone_mobile = $address_delivery->phone_mobile;
+            $seur_order->phone = SeurLib::cleanPhone($address_delivery->phone);
+            $seur_order->phone_mobile = SeurLib::cleanPhone($address_delivery->phone_mobile);
             $seur_order->city = $address_delivery->city;
             $seur_order->id_state = $address_delivery->id_state;
             $seur_order->id_country = $address_delivery->id_country;
@@ -730,7 +741,18 @@ class AdminSeurShippingController extends ModuleAdminController
                 $order->total_paid_tax_excl = $order->total_products + $shipping_amount_tax_excl + $cod_amount;
                 $order->total_paid_tax_incl = $order->total_products_wt + $shipping_amount_tax_incl + $cod_amount;
                 $order->total_shipping = $shipping_amount_tax_incl + $cod_amount;
-                $order->total_shipping_tax_excl = $shipping_amount_tax_excl + $cod_amount;
+
+                // PS - Corregir valor total_shipping_tax_excl
+                $cod_amount_tax_excl = $cod_amount;
+                $percentage_apply = Configuration::get('SEUR2_SETTINGS_COD_FEE_PERCENT');
+                if($percentage_apply){
+                    $percentage_apply = str_replace(',','.',$percentage_apply);
+                    $percentage_apply = $percentage_apply / 100;
+                    // Calculamos el número final
+                    $cod_amount_tax_excl = $cod_amount_tax_excl * (1 - $percentage_apply);
+                }
+
+                $order->total_shipping_tax_excl = $shipping_amount_tax_excl + $cod_amount_tax_excl;
                 $order->total_shipping_tax_incl = $shipping_amount_tax_incl + $cod_amount;
 
                 $seur_order->total_paid = $order->total_paid_real;
@@ -738,10 +760,12 @@ class AdminSeurShippingController extends ModuleAdminController
                 $seur_order->codfee = $cod_amount;
 
                 //actualizar payment
-                $order_payment->amount = $order->total_paid;
-                $order_payment->payment_method = $order->payment;
-                $order_payment->id_currency = $order->id_currency;
-                $order_payment->update();
+                if (isset($order_payment)) {
+                    $order_payment->amount = $order->total_paid;
+                    $order_payment->payment_method = $order->payment;
+                    $order_payment->id_currency = $order->id_currency;
+                    $order_payment->update();
+                }
 
                 //actualizar costes envío transportista
                 $order_carrier->shipping_cost_tax_excl = $shipping_amount_tax_excl + $cod_amount;
@@ -753,7 +777,7 @@ class AdminSeurShippingController extends ModuleAdminController
             $order->save();
 
             //obtener datos de la factura y modificar
-            if ($order_payment) {
+            if (isset($order_payment)) {
                 $order_invoice = $order_payment->getOrderInvoice($id_order);
                 if ($order_invoice) {
                     $order_invoice->total_discount_tax_excl = $order->total_discounts_tax_excl;

@@ -2,6 +2,7 @@
     {literal}
     var seur_ajaxcall_url = '{/literal}{$url_module}{literal}&ajax=1';
     var seur_url = '{/literal}{$url_module}{literal}';
+    var seur_url_basepath = '{/literal}{$seur_url_basepath}{literal}';
     {/literal}
 </script>
     <div class=" headerSeur">

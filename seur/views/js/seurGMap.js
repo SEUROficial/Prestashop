@@ -1,30 +1,3 @@
-/*
-* 2007-2015 PrestaShop
-*
-* NOTICE OF LICENSE
-*
-* This source file is subject to the Open Software License (OSL 3.0)
-* that is bundled with this package in the file LICENSE.txt.
-* It is also available through the world-wide-web at this URL:
-* http://opensource.org/licenses/osl-3.0.php
-* If you did not receive a copy of the license and are unable to
-* obtain it through the world-wide-web, please send an email
-* to license@prestashop.com so we can send you a copy immediately.
-*
-* DISCLAIMER
-*
-* Do not edit or add to this file if you wish to upgrade PrestaShop to newer
-* versions in the future. If you wish to customize PrestaShop for your
-* needs please refer to http://www.prestashop.com for more information.
-*
-*  @author    PrestaShop SA <contact@prestashop.com>
-*  @copyright 2007-2015 PrestaShop SA
-*  @version  Release: 0.4.4
-*  @license   http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
-*  International Registered Trademark & Property of PrestaShop SA
-*/
-
-
 var bodyid;
 var ps_version_seur;
 var displayCarriers = false;
@@ -33,6 +6,7 @@ var id_seur_pos;
 var id_address_delivery;
 var collectionPointInfo;
 var noSelectedPointInfo;
+var seurPudoContainer;
 var listPoints;
 
 var carrierTable;
@@ -77,38 +51,16 @@ function initSeurCarriers()
 {
 	displayCarriers = false;
 	assignGlobalVariables();
-
-	if (displayCarriers)
-	{
+	cleanSeurMaps();
+	if (displayCarriers) {
 		initSeurMaps();
-	}
-	else
-	{
-		if(ps_version_seur != 'ps7'){
-			$('div.seurMapContainer').remove();
-			$('#noSelectedPointInfo').remove();
-			$('#collectionPointInfo').remove();
-			$('#listPoints').remove();
-		}
-		else{
-			$('div.seurMapContainer').fadeOut();
-			$('#noSelectedPointInfo').fadeOut();
-			$('#collectionPointInfo').fadeOut();
-			$('#listPoints').fadeOut();
-
-		}
 	}
 }
 
 function assignGlobalVariables()
 {
 	bodyid = $('body').attr('id');
-	ps_version_seur = $('#ps_version').val();
-
-	if(ps_version_seur == null)
-	{
-		ps_version_seur = 'ps5';
-	}
+	ps_version_seur = $('#ps_version').val()??'ps5';
 
 	id_seur_pos = $('#id_seur_pos').val();
 
@@ -123,6 +75,7 @@ function assignGlobalVariables()
 	}
 	collectionPointInfo = $('#collectionPointInfo');
 	noSelectedPointInfo = $('#noSelectedPointInfo');
+	seurPudoContainer = $('#seurPudoContainer');
 	listPoints = $('#listPoints');
 
 	carrierTable = (ps_version_seur == 'ps4' ? $('#carrierTable') : $('#carrier_area'));
@@ -130,27 +83,15 @@ function assignGlobalVariables()
 	carrierTableInputContainer = (ps_version_seur == 'ps4' ? '#carrierTable' : '#carrier_area .delivery_options');
 
 	$('#pos_selected').val('false');
-
-	if(ps_version_seur == 'ps4')
-	{
-		if($('#carrierTable').length != 0 && seurCarrierDisplayed(id_seur_pos))
-		{
-			displayCarriers = true;
-		}
+	var isSeurCarrierDisplayed = seurCarrierDisplayed(id_seur_pos);
+	if(ps_version_seur == 'ps4' && $('#carrierTable').length != 0 && isSeurCarrierDisplayed) {
+		displayCarriers = true;
 	}
-	else if(ps_version_seur == 'ps5')
-	{
-		if($('.delivery_options').length != 0 && seurCarrierDisplayed(id_seur_pos))
-		{
-			displayCarriers = true;
-		}
+	else if (ps_version_seur == 'ps5' && $('.delivery_options').length != 0 && isSeurCarrierDisplayed) {
+		displayCarriers = true;
 	}
-	else
-	{
-		if($('.delivery-options').length != 0 && seurCarrierDisplayed(id_seur_pos))
-		{
-			displayCarriers = true;
-		}
+	else if($('.delivery-options').length != 0 && isSeurCarrierDisplayed) {
+		displayCarriers = true;
 	}
 
 	map = $('<div />').attr('id', 'seurMap').attr('init', 'false');
@@ -205,7 +146,6 @@ function seurCarrierDisplayed(id_seur_pos)
 			if(Number($(this).val().replace(/[^0-9]+/g, '')) == Number(id_seur_pos))
 			{
 				displayed = true;
-				return;
 			}
 		});
 	}
@@ -213,7 +153,6 @@ function seurCarrierDisplayed(id_seur_pos)
 		$('.delivery_options input[type="radio"]').each(function () {
 			if (Number($(this).val().replace(/[^0-9]+/g, '')) == Number(id_seur_pos)) {
 				displayed = true;
-				return;
 			}
 		});
 	}
@@ -221,7 +160,6 @@ function seurCarrierDisplayed(id_seur_pos)
 		$('.delivery-options input[type="radio"]').each(function () {
 			if (Number($(this).val().replace(/[^0-9]+/g, '')) == Number(id_seur_pos)) {
 				displayed = true;
-				return;
 			}
 		});
 
@@ -232,170 +170,157 @@ function seurCarrierDisplayed(id_seur_pos)
 
 function initSeurMaps()
 {
-	if(displayCarriers){
-		$('span', map).css({ 'line-height' : '64px', 'font-size' : '50px' });
+	$('span', map).css({ 'line-height' : '64px', 'font-size' : '50px' });
 
-		map = $('<div />').addClass('seurMapContainer').html(map);
+	map = $('<div />').addClass('seurMapContainer').html(map);
 
-		if(ps_version_seur == 'ps4')
-		{
-			map.insertAfter($('#carrierTable'));
+	if(ps_version_seur == 'ps4')
+	{
+		map.insertAfter($('#carrierTable'));
+	}
+	else if(ps_version_seur == 'ps5')
+	{
+		var pNavTmp = $("#carrier_area div.delivery_options_address:first");
+		map.insertAfter(pNavTmp);
+	}
+	else if(ps_version_seur == 'ps7')
+	{
+		var pNavTmp = $(".delivery-options");
+		map.insertAfter(pNavTmp);
+	}
+
+	noSelectedPointInfo.fadeOut();
+	collectionPointInfo.fadeOut();
+	seurPudoContainer.fadeOut();
+	noSelectedPointInfo.insertAfter(map);
+	collectionPointInfo.insertAfter(map);
+	seurPudoContainer.insertAfter(map);
+
+	gMapOptions = {
+		zoom: 13,
+		center: new google.maps.LatLng(0,0),
+		mapTypeId: google.maps.MapTypeId.ROADMAP,
+		noClear: true,
+		disableDefaultUI: true,
+		panControl:true,
+		zoomControl:true,
+		mapTypeControl:true,
+		scaleControl:true,
+		streetViewControl:true,
+		overviewMapControl:true,
+		rotateControl:true,
+		keyboardShortcuts: false,
+		disableDoubleClickZoom: false,
+		draggable: true,
+		scrollwheel: true,
+		draggableCursor: 'move',
+		draggingCursor: 'move',
+		mapTypeControl: true,
+		navigationControl: true,
+		streetViewControl: true,
+		navigationControlOptions: {
+			position: google.maps.ControlPosition.TOP_RIGHT,
+			style: google.maps.NavigationControlStyle.ANDROID
+		},
+		scaleControl: false,
+		scaleControlOptions: {
+			position: google.maps.ControlPosition.BOTTOM_LEFT,
+			style: google.maps.ScaleControlStyle.SMALL
 		}
-		else if(ps_version_seur == 'ps5')
-		{
-			var pNavTmp = $("#carrier_area div.delivery_options_address:first");
-			map.insertAfter(pNavTmp);
-		}
-		else if(ps_version_seur == 'ps7')
-		{
-			var pNavTmp = $(".delivery-options");
-			map.insertAfter(pNavTmp);
-		}
+	};
 
-		if(ps_version_seur != 'ps7') {
-			noSelectedPointInfo.fadeOut();
-			collectionPointInfo.fadeOut();
-			noSelectedPointInfo.insertAfter(map);
-			collectionPointInfo.insertAfter(map);
-		}
-		else{
-			noSelectedPointInfo.insertAfter(map);
-			noSelectedPointInfo.fadeOut();
-			collectionPointInfo.insertAfter(map);
-			collectionPointInfo.fadeOut();
+	currentMarker = null;
 
-		}
+	gMaps = new google.maps.Map(document.getElementById('seurMap'), gMapOptions);
 
-		gMapOptions = {
-			zoom: 13,
-			center: new google.maps.LatLng(0,0),
-			mapTypeId: google.maps.MapTypeId.ROADMAP,
-			noClear: true,
-			disableDefaultUI: true,
-			panControl:true,
-			zoomControl:true,
-			mapTypeControl:true,
-			scaleControl:true,
-			streetViewControl:true,
-			overviewMapControl:true,
-			rotateControl:true,
-			keyboardShortcuts: false,
-			disableDoubleClickZoom: false,
-			draggable: true,
-			scrollwheel: true,
-			draggableCursor: 'move',
-			draggingCursor: 'move',
-			mapTypeControl: true,
-			navigationControl: true,
-			streetViewControl: true,
-			navigationControlOptions: {
-				position: google.maps.ControlPosition.TOP_RIGHT,
-				style: google.maps.NavigationControlStyle.ANDROID
-			},
-			scaleControl: false,
-			scaleControlOptions: {
-				position: google.maps.ControlPosition.BOTTOM_LEFT,
-				style: google.maps.ScaleControlStyle.SMALL
-			}
-		};
+	userMarker = new google.maps.Marker({
+		position: null,
+		map: gMaps,
+		title: 'Direcci\u00f3n pr\u00f3xima a usted',
+		icon: baseDir + 'modules/seur/views/img/user.png',
+		cursor: 'default',
+		draggable: false
+	});
 
+	// if one step checkout and ps5
+	if((bodyid == 'order-opc') && ps_version_seur == 'ps5')
+	{
+		carrier_value = $('input[type="radio"].delivery_option_radio').attr('name');
 
-		currentMarker = null;
-
-
-		if (gMaps == undefined) {
-			gMaps = new google.maps.Map(document.getElementById('seurMap'), gMapOptions);
-		}
-
-		userMarker = new google.maps.Marker({
-			position: null,
-			map: gMaps,
-			title: 'Direcci\u00f3n pr\u00f3xima a usted',
-			icon: baseDir + 'modules/seur/views/img/user.png',
-			cursor: 'default',
-			draggable: false
+		str = carrier_value;
+		cad_string = str.substring(str.indexOf('[') + 1,str.indexOf(']'));
+		// set value of onchange
+		$('.delivery_option_radio').each(function(){
+			carrier_value = $(this).attr('value');
+			$(this).on('change', null, function(){
+				updateOneStepCloser();
+			});
 		});
+		// add reload the page
+		$('#id_address_delivery').attr('onchange','updateAddressesDisplay(); updateAddressSelectionOneStep();');
+	}
 
-		// if one step checkout and ps5
-		if((bodyid == 'order-opc') && ps_version_seur == 'ps5')
-		{
-			carrier_value = $('input[type="radio"].delivery_option_radio').attr('name');
+	// if ps7
+	if(ps_version_seur == 'ps7')
+	{
+		carrier_value = $('.delivery-options input[type="radio"]').attr('name');
 
-			str = carrier_value;
-			cad_string = str.substring(str.indexOf('[') + 1,str.indexOf(']'));
-			// set value of onchange
-			$('.delivery_option_radio').each(function(){
-				carrier_value = $(this).attr('value');
-				$(this).on('change', null, function(){
-					updateOneStepCloser();
-				});
+		str = carrier_value;
+		cad_string = str.substring(str.indexOf('[') + 1,str.indexOf(']'));
+		// set value of onchange
+		$('.delivery_option').each(function(){
+			carrier_value = $(this).attr('value');
+			$(this).on('change', null, function(){
+				updateOneStepCloser();
 			});
-			// add reload the page
-			$('#id_address_delivery').attr('onchange','updateAddressesDisplay(); updateAddressSelectionOneStep();');
+		});
+		// add reload the page
+		$('#id_address_delivery').attr('onchange','updateAddressesDisplay(); updateAddressSelectionOneStep();');
+	}
+
+	id_carrier = "";
+	var id_seur_pos = $('#id_seur_pos').val();
+
+	first_time_id = id_seur_pos;
+
+	if(map.attr('init') == 'false' ){
+		map.attr('init','true').css('position','absolute');
+	}
+
+	if ((ps_version_seur != 'ps7' && $('input[type="radio"]').is(':checked')) ||
+		(ps_version_seur == 'ps7' && $('.delivery-options input[type="radio"]').is(':checked')))
+	{
+		if(ps_version_seur != 'ps7')
+		{
+			currentCarrierId = $('input[type="radio"]:checked', $(carrierTableInputContainer)).val();
+		}
+		else
+		{
+			currentCarrierId = $('.delivery-options input[type="radio"]:checked').val();
 		}
 
-		// if ps7
-		if(ps_version_seur == 'ps7')
-		{
-			carrier_value = $('.delivery-options input[type="radio"]').attr('name');
+		currentCarrierId = currentCarrierId.replace(",", "");
 
-			str = carrier_value;
-			cad_string = str.substring(str.indexOf('[') + 1,str.indexOf(']'));
-			// set value of onchange
-			$('.delivery_option').each(function(){
-				carrier_value = $(this).attr('value');
-				$(this).on('change', null, function(){
-					updateOneStepCloser();
-				});
-			});
-			// add reload the page
-			$('#id_address_delivery').attr('onchange','updateAddressesDisplay(); updateAddressSelectionOneStep();');
+		if(currentCarrierId == id_seur_pos )
+		{
+			if ($('#seur_map_reload_config').val() == 1) {
+				if (!localStorage.getItem('seurPickup') || localStorage.getItem('seurPickup') == "false") {
+					localStorage.setItem('seurPickup', "true");
+					location.reload();
+				}
+			}
+			printMap();
+			setButtonProcessCarrier('disabled');
+			noSelectedPointInfo.fadeIn();
+		} else {
+			setButtonProcessCarrier('enabled');
+			noSelectedPointInfo.fadeOut();
 		}
-
-		id_carrier = "";
-		var id_seur_pos = $('#id_seur_pos').val();
-
-		first_time_id = id_seur_pos;
-
-		if(map.attr('init') == 'false' )
-		{ map.attr('init','true').css('position','absolute'); }
-
-		if ((ps_version_seur != 'ps7' && $('input[type="radio"]').is(':checked')) || (ps_version_seur == 'ps7' && $('.delivery-options input[type="radio"]').is(':checked')))
-		{
-			if(ps_version_seur != 'ps7')
-			{
-				currentCarrierId = $('input[type="radio"]:checked', $(carrierTableInputContainer)).val();
-			}
-			else
-			{
-				currentCarrierId = $('.delivery-options input[type="radio"]:checked').val();
-			}
-
-			currentCarrierId = currentCarrierId.replace(",", "");
-
-			if(currentCarrierId == id_seur_pos )
-			{
-				printMap();
-
-			}
-			else
-			{
-				if(ps_version_seur != 'ps7'){
-					$('div.seurMapContainer').remove();
-					$('#noSelectedPointInfo').remove();
-					$('#collectionPointInfo').remove();
-					$('input[name=processCarrier]').removeAttr('disabled');
-					$('button[name=processCarrier]').removeAttr('disabled');
-				}
-				else{
-					$('div.seurMapContainer').fadeOut();
-					$('#noSelectedPointInfo').fadeOut();
-					$('#collectionPointInfo').fadeOut();
-					$('input[name=processCarrier]').removeAttr('disabled');
-					$('button[name=processCarrier]').removeAttr('disabled');
-
-				}
-			}
+	}
+	else
+	{
+		if ($('#seur_map_reload_config').val() == 1) {
+			localStorage.setItem('seurPickup', "false");
 		}
 	}
 };
@@ -430,9 +355,7 @@ function saveCollectorPoint(id_cart, post_codeData )
 		success: function(data)
 		{
 			$('#pos_selected').val("true");
-			$('#opc_payment_methods').show();
-			$('input[name="processCarrier"]').removeAttr('disabled');
-			$('button[name="processCarrier"]').removeAttr('disabled');
+			setButtonProcessCarrier('enabled');
 		},
 		error: function(xhr, ajaxOptions, thrownError)
 		{
@@ -629,35 +552,15 @@ function updateCarrierListOneStep(json)
 		if(currentCarrierId == id_seur_pos )
 		{
 			(!map.hasClass("showmap") ? map.addClass('showmap').css('position','relative') : "" );
-			if($('#pos_selected').val() == "false")
-			{
-				$('input[name="processCarrier"]').attr("disabled","disabled");
-				$('button[name="processCarrier"]').attr("disabled","disabled");
-				$('#opc_payment_methods').hide();
-				noSelectedPointInfo.fadeIn();
-			}
-			if($('#pos_selected').val() == "true")
-			{
-				$('input[name="processCarrier"]').removeAttr("disabled");
-				$('button[name="processCarrier"]').removeAttr("disabled");
-				noSelectedPointInfo.fadeOut();
-				$('#opc_payment_methods').show();
-			}
-			($('#reembolsoSEUR').is(":visible") ? $('#reembolsoSEUR').fadeOut() : "" );
 		}
 		else
 		{
 			map.removeClass('showmap').css('position','absolute');
-			if(ps_version_seur != 'ps7') {
-				noSelectedPointInfo.remove();
-				collectionPointInfo.remove();
-			}
-			else{
-				noSelectedPointInfo.fadeOut();
-				collectionPointInfo.fadeOut();
-			}
-			$('#opc_payment_methods').show();
 		}
+
+		setButtonProcessCarrier($('#pos_selected').val() == "false"?'disabled':'enabled');
+
+		($('#reembolsoSEUR').is(":visible") ? $('#reembolsoSEUR').fadeOut() : "" );
 	}
 }
 
@@ -696,66 +599,35 @@ function printMap()
 	usrAddress = getUserAddress(id_address_delivery.val());
 	points = getSeurCollectionPoints();
 
-	geocoder = new google.maps.Geocoder();
-	geocoder.geocode({ 'address': usrAddress}, function(result, status)
-	{
-		if(status == google.maps.GeocoderStatus.OK )
+	try {
+		geocoder = new google.maps.Geocoder();
+		geocoder.geocode({ 'address': usrAddress}, function(result, status)
 		{
-			gMaps.setCenter(result[0].geometry.location );
-			userMarker.setPosition(result[0].geometry.location );
-			$('.seurMapContainer').css({'position' : 'relative', 'left' : 'inherit'});
-			printCollectorPoints(points);
-
-			check_reembolsoSeur();
-
-			listPoints.appendTo('.seurMapContainer');
-			listPoints.fadeIn();
-			$('#seurPudoContainer').appendTo('.seurMapContainer');
-
-			(!map.hasClass("showmap") ? map.addClass('showmap').css('position','relative') : "" );
-
-			if ($('#pos_selected').val() == "false"){
-				$('input[name="processCarrier"]').attr("disabled","disabled");
-				$('button[name="processCarrier"]').attr("disabled","disabled");
-				$('#opc_payment_methods').hide();
-				noSelectedPointInfo.fadeIn();
-			}
-			if ($('#pos_selected').val() == "true")
+			if(status == google.maps.GeocoderStatus.OK )
 			{
-				$('input[name="processCarrier"]').removeAttr("disabled");
-				$('button[name="processCarrier"]').removeAttr("disabled");
-				noSelectedPointInfo.fadeOut();
-				$('#opc_payment_methods').show();
-			}
-			($('#reembolsoSEUR').is(":visible") ? $('#reembolsoSEUR').fadeOut() : "" );
-		}
-		else
-		{
-			map.removeClass('showmap').css('position','absolute');
+				gMaps.setCenter(result[0].geometry.location );
+				userMarker.setPosition(result[0].geometry.location );
+				$('.seurMapContainer').css({'position' : 'relative', 'left' : 'inherit'});
+				printCollectorPoints(points);
 
-			if(ps_version_seur != 'ps7') {
-				noSelectedPointInfo.fadeOut();
-				collectionPointInfo.fadeOut();
-				$('#opc_payment_methods').show();
-				alert(no_pickup_points_error_text);
-				$('div.seurMapContainer').fadeOut();
-				$('#noSelectedPointInfo').fadeOut();
-				$('#collectionPointInfo').fadeOut();
+				check_reembolsoSeur();
+
+				(!map.hasClass("showmap") ? map.addClass('showmap').css('position','relative') : "" );
+
+				setButtonProcessCarrier($('#pos_selected').val() == "false"?'disabled':'enabled');
+
+				($('#reembolsoSEUR').is(":visible") ? $('#reembolsoSEUR').fadeOut() : "" );
 			}
-			else{
-				noSelectedPointInfo.remove();
-				collectionPointInfo.remove();
-				$('#opc_payment_methods').show();
-				alert(no_pickup_points_error_text);
-				$('div.seurMapContainer').remove();
-				$('#noSelectedPointInfo').remove();
-				$('#collectionPointInfo').remove();
+			else
+			{
+				map.removeClass('showmap').css('position','absolute');
+				printPointsList(points);
 			}
-			$('input[name=processCarrier]').removeAttr('disabled');
-			$('button[name=processCarrier]').removeAttr('disabled');
-			printPointsList(points);
-		}
-	});
+		});
+
+	} catch (error) {
+		console.error("Se produjo un error: " + error.message);
+	}
 }
 
 function getSeurCollectionPoints()
@@ -793,9 +665,9 @@ function printPointsList(collectorPoints) {
 		});
 		$('#seurPudoContainer').append(html);
 	});
-	$('#seurMap').hide();
+	$('#seurMap').remove();
 	$('.seurMapContainer').css({'position': 'relative', 'left': 'inherit', 'height': 'auto'});
-	$('#listPoints').css({'position': 'relative', 'width': '100%', 'height': 'auto'});
+	listPoints.css({'position': 'relative', 'width': '100%', 'height': 'auto'});
 	$('#seurPudoContainer').css({'display' : 'block', 'padding': '0 0 15px 0'});
 }
 
@@ -818,7 +690,7 @@ function printCollectorPoints(collectorPoints) {
 	};
 
 	clearMarkers();
-
+	listPoints = $('<div />').attr('id', 'listPoints');
 	var markers = [];
 	$.each(collectorPoints, function (key, post_code) {
 		latlng = new google.maps.LatLng(
@@ -845,7 +717,9 @@ function printCollectorPoints(collectorPoints) {
 			currentMarker = markerClick(currentMarker, markers[key])
 		});
 
-		$('#listPoints').append(html);
+		listPoints.append(html);
+		listPoints.appendTo('.seurMapContainer');
+		listPoints.fadeIn();
 
 		google.maps.event.addListener(marker, 'click', function () {
 			currentMarker = markerClick(currentMarker, this);
@@ -899,4 +773,39 @@ function clearMarkers(){
 		gMaps.markers[i].setMap(null);
 	}
 	gMaps.markers = [];
+}
+
+function cleanSeurMaps()
+{
+
+	if(ps_version_seur === 'ps7'){
+		$('div.seurMapContainer').remove();
+		noSelectedPointInfo.fadeOut();
+		collectionPointInfo.fadeOut();
+		listPoints.html();
+	}
+	else{
+		$('div.seurMapContainer').fadeOut();
+		noSelectedPointInfo.fadeOut();
+		collectionPointInfo.fadeOut();
+		listPoints.fadeOut();
+	}
+}
+
+function setButtonProcessCarrier(state)
+{
+	if(state == 'disabled')
+	{
+		$('input[name="processCarrier"]').attr("disabled","disabled");
+		$('button[name="processCarrier"]').attr("disabled","disabled");
+		$('button[name="confirmDeliveryOption"]').attr("disabled","disabled");
+		$('#opc_payment_methods').hide();
+	}
+	else
+	{
+		$('input[name="processCarrier"]').removeAttr("disabled");
+		$('button[name="processCarrier"]').removeAttr("disabled");
+		$('button[name="confirmDeliveryOption"]').removeAttr("disabled");
+		$('#opc_payment_methods').show();
+	}
 }

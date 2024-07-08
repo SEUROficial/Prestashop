@@ -36,6 +36,7 @@
 <input type="hidden" name="id_seur_pos" id="id_seur_pos" value="{$id_seur_pos|intval}" />
 <input type="hidden" name="ps_version" id="ps_version" value="{$ps_version|escape:'htmlall':'UTF-8'}" />
 <input type="hidden" name="id_seur_RESTO" id="id_seur_RESTO" value="{$seur_resto|escape:'htmlall':'UTF-8'}" />
+<input type="hidden" name="seur_map_reload_config" id="seur_map_reload_config" value="{$seur_map_reload_config|escape:'htmlall':'UTF-8'}" />
 {if isset($id_address)}
 	<input type="hidden" name="id_address_delivery" id="id_address_delivery" value="{$id_address|intval}" />
 {/if}

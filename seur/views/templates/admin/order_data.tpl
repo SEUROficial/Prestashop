@@ -8,10 +8,9 @@
 	<script type="text/javascript">
 		{literal}
 		var seur_ajaxcall_url = '{/literal}{$link->getAdminLink('AdminSeurShipping', true)|escape:'quotes':'UTF-8'}{literal}&ajax=1';
-		/* $('#shipping_table th:last-child').remove();
-		$('#shipping_table th:last-child').empty();
-		$('#shipping_table td:last-child').remove();
-		$('#shipping_table td:last-child').empty(); */
+		var id_seur_order = '{/literal}{$id_seur_order}{literal}';
+		var labeled = '{/literal}{$labeled}{literal}';
+		var seur_url_basepath = '{/literal}{$seur_url_basepath}{literal}';
 		$('#shipping_table td:last-child').html('<a href="#seur"><button class="btn btn-default btn-disk pull-right" type="button" value="1"><i class="icon-eye"></i> {/literal}{l s='Ver desglose' mod='seur'}{literal}</button></a>');
 		{/literal}
 	</script>
@@ -61,6 +60,15 @@
                             {foreach from=$list_ccc item=ccc_item}
 								<option {if $id_seur_ccc == $ccc_item['id_seur_ccc']} selected {/if} value="{$ccc_item['id_seur_ccc']}">{$ccc_item['nombre_personalizado']}</option>
                             {/foreach}
+						</select>
+					</div>
+				</div>
+				<div class="module_seur_weight">
+					<div>
+						<label>{l s='Envío asegurado' mod='seur'}</label>
+						<select name="insured" id="insured" {if $labeled} disabled="disabled" {/if}>
+							<option {if $insured == 0 } selected {/if} value="0">{l s='No' mod='seur'}</option>
+							<option {if $insured == 1 } selected {/if} value="1">{l s='Si' mod='seur'}</option>
 						</select>
 					</div>
 				</div>
@@ -141,6 +149,35 @@
                             {foreach from=$states item=state}
 								<option value="{$state.id_state}" {if $state.id_state==$id_state}selected{/if}>{$state.name}</option>
                             {/foreach}
+						</select>
+					</div>
+					<div class="col-xs-12 col-sm-6">
+						<label>{l s='Service Type' mod='seur'}</label>
+						<select name="type_service" id="type_service">
+							{foreach from=$services_types item=service_type}
+								<option value="{$service_type.id_seur_services_type}"
+										{if $shipping_type==$service_type.id_seur_services_type }selected{/if}>
+									{$service_type.name}
+								</option>
+							{/foreach}
+						</select>
+					</div>
+					<div class="col-xs-12 col-sm-6">
+						<label>{l s='Product Code' mod='seur'}</label>
+						<input type="hidden" id="product_prev" value="{$product_code}">
+						<select name="product" id="selectProduct">
+							{foreach from=$products key="key" item="item"}
+								<option value="{$key}" {if $product_code==$key }selected{/if}>{$item}</option>
+							{/foreach}
+						</select>
+					</div>
+					<div class="col-xs-12 col-sm-6">
+						<label>{l s='Service Code' mod='seur'}</label>
+						<input type="hidden" id="service_prev" value="{$service_code}">
+						<select name="service" id="selectService">
+							{foreach from=$services key="key" item="item"}
+								<option value="{$key}" {if $service_code==$key }selected{/if}>{$item}</option>
+							{/foreach}
 						</select>
 					</div>
 					<div style="clear:both"></div>

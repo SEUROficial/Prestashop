@@ -372,15 +372,6 @@ class SeurLib
     public static function setOrderShippingNumber($id_order, $trackingNumber) {
         $order = new OrderCore($id_order);
         $order->setWsShippingNumber($trackingNumber);
-        self::saveOrderShippingNumber($id_order, $trackingNumber);
-    }
-    public static function saveOrderShippingNumber($id_order, $trackingNumber) {
-        $result = Db::getInstance()->Execute("
-				UPDATE " . _DB_PREFIX_ . "orders
-				SET `shipping_number`='" . $trackingNumber . "'
-				WHERE `id_order` =" . (int)$id_order
-        );
-        return $result;
     }
 
 	public static function getModulosPago()
@@ -696,14 +687,16 @@ class SeurLib
     {
         $msg = Module::getInstanceByName('seur')->l($msg);
 
-        if ($type==0) {
-            Context::getContext()->controller->errors[] = $msg;
-        }
-        if ($type==1) {
-            Context::getContext()->controller->confirmations[] = $msg;
-        }
-        if ($type==2) {
-            Context::getContext()->controller->warnings[] = $msg;
+        if (isset(Context::getContext()->controller)) {
+            if ($type==0) {
+                Context::getContext()->controller->errors[] = $msg;
+            }
+            if ($type==1) {
+                Context::getContext()->controller->confirmations[] = $msg;
+            }
+            if ($type==2) {
+                Context::getContext()->controller->warnings[] = $msg;
+            }
         }
         if ($log) self::log($msg);
     }
@@ -1111,5 +1104,21 @@ class SeurLib
                 inner join ps_feature_value_lang fvl on fvl.id_feature_value = fp.id_feature_value
                 where id_product=".$product['product_id']." and fvl.id_lang=". Context::getContext()->language->id;
         return DB::getInstance()->getValue($sql);
+    }
+
+    static function cleanPhone($phone) {
+        $phone = preg_replace('/[\s+\-\.\(\)\/]/', '', $phone);
+        $phone = preg_replace('/^0+/', '', $phone);
+        return $phone;
+    }
+
+    static function getServicesTypes() {
+        $sql = "SELECT id_seur_services_type, name FROM `" . _DB_PREFIX_ . "seur2_services_type` ";
+        return Db::getInstance()->executeS($sql);
+    }
+
+    static function getServiceType($service_code){
+        $sql = "SELECT id_seur_services_type FROM `" . _DB_PREFIX_ . "seur2_services` WHERE id_seur_services = " . $service_code;
+        return Db::getInstance()->getValue($sql);
     }
 }

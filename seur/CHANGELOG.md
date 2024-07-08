@@ -1,6 +1,47 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2.5.13] - 2024-07-08
+
+### Fixed
+
+- Order_payment when no payments
+- Url module ajax
+- Total_shipping_tax_incl value
+- COD logic in module
+
+## [2.5.12] - 2024-05-16
+
+### Fixed
+
+- Deprecated OrderPayment::getByOrderId
+- Deprecated order shipping_number
+- Default value if no pickup is configured
+- Update ajax shipment url  
+
+## [2.5.11] - 2024-04-16
+
+### Fixed
+
+- Status update script URL 
+- Seur carriers products and services urls when site is in subfolder
+- Set unused files as deprecated
+
+## [2.5.10] - 2024-03-15
+
+### Added
+
+- Edit order product-service
+- Insured shipment option
+- GMap reload option and refactor
+- Change ISO:23412 condition
+
+## [2.5.9] - 2024-01-29
+
+### Fixed
+
+- Clean phone data
+ 
 ## [2.5.8] - 2024-01-16
 
 ### Added

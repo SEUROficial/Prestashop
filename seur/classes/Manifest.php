@@ -27,7 +27,7 @@ class SeurManifest
             $order_manifest['consig_name'] =  $seurOrder->firstname." ".$seurOrder->lastname;
             $order_manifest['consig_address'] =  $seurOrder->address1." ".$seurOrder->address2;
             $order_manifest['consig_postalcode'] =  $seurOrder->postcode;
-            $order_manifest['consig_phone'] =  $seurOrder->phone_mobile;
+            $order_manifest['consig_phone'] =  SeurLib::cleanPhone($seurOrder->phone_mobile);
             $order_manifest['bultos'] =  $seurOrder->numero_bultos;
             $order_manifest['producto'] =  $seurOrder->product;
             $order_manifest['ecb'] =   explode(" - ", $seurOrder->ecb);

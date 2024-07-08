@@ -47,7 +47,7 @@ class Seur extends CarrierModule
     {
         $this->name = 'seur';
         $this->tab = 'shipping_logistics';
-        $this->version = '2.5.8';
+        $this->version = '2.5.13';
         $this->author = 'Seur';
         $this->need_instance = 0;
 
@@ -728,7 +728,7 @@ class Seur extends CarrierModule
                 'img_path' => $this->_path . 'views/img/',
                 'module_path' => 'index.php?controller=AdminModules&configure=' . $this->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Tab::getIdFromClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
                 'lista_ccc' =>  SeurCCC::getListCCC(),
-                'module_url' => $this->context->link->getAdminBaseLink() . basename(_PS_ADMIN_DIR_),
+                'module_url' => $this->context->link->getBaseLink($this->context->shop->id),
                 'module_secret' => Configuration::get('SEUR2_API_CLIENT_SECRET'),
                 'module_folder' => __DIR__
             ));
@@ -837,7 +837,7 @@ class Seur extends CarrierModule
 
         $this->context->smarty->assign(
             array(
-                'id_seur_pos' => (int)$seur_carrier_pos['id_seur_carrier'],
+                'id_seur_pos' =>  $seur_carrier_pos?(int)$seur_carrier_pos['id_seur_carrier']:0,
                 'seur_dir' => $this->_path,
                 'ps_version' => _PS_VERSION_
             )
@@ -945,8 +945,8 @@ class Seur extends CarrierModule
         $seurOrder->id_state = $address->id_state;
         $seurOrder->dni = $address->dni;
         $seurOrder->other = $address->other;
-        $seurOrder->phone = $address->phone;
-        $seurOrder->phone_mobile = $address->phone_mobile;
+        $seurOrder->phone = SeurLib::cleanPhone($address->phone);
+        $seurOrder->phone_mobile = SeurLib::cleanPhone($address->phone_mobile);
 
         /* Comprobamos si es una recogida en punto de venta */
         $pickup_point_info = SeurLib::getOrderPos((int)$params['order']->id_cart);
@@ -1075,7 +1075,8 @@ class Seur extends CarrierModule
                     'id_seur_pos' => $seur_carrier_pos,
                     'seur_resto' => $seur_carriers_without_pos,
                     'src' => $this->_path.'img/unknown.gif',
-                    'ps_version' => $ps_version
+                    'ps_version' => $ps_version,
+                    'seur_map_reload_config' => Configuration::get('SEUR2_MAP_RELOAD_CONFIG')
                 )
             );
 
@@ -1169,7 +1170,8 @@ class Seur extends CarrierModule
                     'id_seur_pos' => $seur_carrier_pos,
                     'seur_resto' => $seur_carriers_without_pos,
                     'src' => $this->_path.'img/unknown.gif',
-                    'ps_version' => version_compare(_PS_VERSION_, '1.5', '<') ? 'ps4' : 'ps5'
+                    'ps_version' => version_compare(_PS_VERSION_, '1.5', '<') ? 'ps4' : 'ps5',
+                    'seur_map_reload_config' => Configuration::get('SEUR2_MAP_RELOAD_CONFIG')
                 )
             );
 
@@ -1212,7 +1214,7 @@ class Seur extends CarrierModule
         $seur_ccc->cit = Tools::getValue("cit");
         $seur_ccc->franchise = Tools::getValue("franchise");
         $seur_ccc->nombre_personalizado = Tools::getValue("nombre_personalizado").'';
-        $seur_ccc->phone = Tools::getValue("phone");
+        $seur_ccc->phone = SeurLib::cleanPhone(Tools::getValue("phone"));
         $seur_ccc->fax = Tools::getValue("fax");
         $seur_ccc->email = Tools::getValue("email");
         $seur_ccc->e_devoluciones = Tools::getValue("eDevoluciones");
@@ -1287,7 +1289,7 @@ class Seur extends CarrierModule
                 'cit' => $seur_ccc->cit,
                 'franchise' => $seur_ccc->franchise,
                 'nombre_personalizado' => $seur_ccc->nombre_personalizado.'',
-                'phone' => $seur_ccc->phone,
+                'phone' => SeurLib::cleanPhone($seur_ccc->phone),
                 'email' => $seur_ccc->email,
                 'eDevoluciones' => $seur_ccc->e_devoluciones,
                 'urleDevoluciones' => $seur_ccc->url_devoluciones,
@@ -1368,7 +1370,7 @@ class Seur extends CarrierModule
         $this->context->smarty->assign(
             array(
                 'status_ps' => $status_ps,
-                'cashDelivery' => $module->active,
+                'cashDelivery' => Configuration::get('SEUR2_SETTINGS_COD'), //$module->active
                 'payments_methods' => $payments_methods,
                 'cod_fee_percent' => Configuration::get('SEUR2_SETTINGS_COD_FEE_PERCENT'),
                 'cod_fee_min' => Configuration::get('SEUR2_SETTINGS_COD_FEE_MIN'),
@@ -1537,7 +1539,7 @@ class Seur extends CarrierModule
             $seur_order->save();
 
             //actualizar payment
-            $order_payment = OrderPayment::getByOrderId($order->id);
+            $order_payment = OrderPayment::getByOrderReference($order->reference);
             if (isset($order_payment[0])) {
                 $order_payment = $order_payment[0];
                 $order_payment->amount = $order->total_paid;
@@ -1632,12 +1634,14 @@ class Seur extends CarrierModule
 
                 $firstname = $seur_order['firstname'];
                 $lastname = $seur_order['lastname'];
-                $phone = $seur_order['phone'];
-                $phone_mobile = $seur_order['phone_mobile'];
+                $phone = SeurLib::cleanPhone($seur_order['phone']);
+                $phone_mobile = SeurLib::cleanPhone($seur_order['phone_mobile']);
                 $dni = $seur_order['dni'];
                 $address1 = $seur_order['address1'];
                 $address2 = $seur_order['address2'];
                 $postcode = $seur_order['postcode'];
+                $product_code = $seur_order['product'];
+                $service_code = $seur_order['service'];
                 $city = $seur_order['city'];
                 $id_country = $seur_order['id_country'];
                 $id_state = $seur_order['id_state'];
@@ -1680,6 +1684,20 @@ class Seur extends CarrierModule
 
                 $this->context->smarty->assign('send_to_digital_docu', (!$seur_order['brexit'] || !$seur_order['tariff']) && $order->hasInvoice() && !SeurLib::isEuropeanShipping($seur_order['id_seur_order']));
                 $this->context->smarty->assign('send_digital_docu', Context::getContext()->link->getAdminLink('AdminSeurShipping')."&action=send_dd&id_seur_order=".$seur_order['id_seur_order']."&id_order=".$seur_order['id_order']);
+
+                $serviceTypes = SeurLib::getServicesTypes();
+                $shipping_type = SeurLib::getServiceType($service_code);
+
+                $this->context->smarty->assign('services_types', $serviceTypes);
+                $this->context->smarty->assign('products', []);
+                $this->context->smarty->assign('services', []);
+
+                $this->context->smarty->assign('shipping_type', $shipping_type);
+                $this->context->smarty->assign('product_code', $product_code);
+                $this->context->smarty->assign('service_code', $service_code);
+
+                $this->context->smarty->assign('insured', $seur_order['insured']);
+                $this->context->smarty->assign('id_seur_order', $seur_order['id_seur_order']);
 
                 return $this->display(__FILE__, 'views/templates/admin/order_data.tpl');
 

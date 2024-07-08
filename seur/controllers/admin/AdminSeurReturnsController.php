@@ -753,8 +753,8 @@ class AdminSeurTrackingController extends ModuleAdminController
             'postcode' => $seur_order->postcode,
             'city' => $seur_order->city,
             'other' => $seur_order->other,
-            'phone' => $seur_order->phone,
-            'phone_mobile' => $seur_order->phone_mobile,
+            'phone' => SeurLib::cleanPhone($seur_order->phone),
+            'phone_mobile' => SeurLib::cleanPhone($seur_order->phone_mobile),
         );
 
         return $config_fields;
@@ -787,8 +787,8 @@ class AdminSeurTrackingController extends ModuleAdminController
             $seurOrder->postcode = $address->postcode;
             $seurOrder->city = $address->city;
             $seurOrder->other = $address->other;
-            $seurOrder->phone = $address->phone;
-            $seurOrder->phone_mobile = $address->phone_mobile;
+            $seurOrder->phone = SeurLib::cleanPhone($address->phone);
+            $seurOrder->phone_mobile = SeurLib::cleanPhone($address->phone_mobile);
 
             $seurOrder->codfee = 0;
             $seurOrder->total_paid = $order->total_paid_real;
@@ -958,8 +958,8 @@ class AdminSeurTrackingController extends ModuleAdminController
                     'direccion_consignatario' => $direccion,
                     'consignee_town' => $seur_order->city,
                     'codPostal_consignatario' => $post_code,
-                    'telefono_consignatario' => (!empty($seur_order->phone) ? $seur_order->phone : $seur_order->phone_mobile),
-                    'movil' => (!empty($seur_order->phone_mobile) ? $seur_order->phone_mobile : $seur_order->phone),
+                    'telefono_consignatario' => SeurLib::cleanPhone(!empty($seur_order->phone) ? $seur_order->phone : $seur_order->phone_mobile),
+                    'movil' => SeurLib::cleanPhone(!empty($seur_order->phone_mobile) ? $seur_order->phone_mobile : $seur_order->phone),
                     'name' => $name,
                     'companyia' => (!empty($seur_order->company) ? $seur_order->company : ''),
                     'email_consignatario' => Validate::isLoadedObject($customer) ? $customer->email : '',
@@ -995,8 +995,8 @@ class AdminSeurTrackingController extends ModuleAdminController
                             'direccion_consignatario' => $direccion,
                             'consignee_town' => $datospos['city'],
                             'codPostal_consignatario' => $datospos['postal_code'],
-                            'telefono_consignatario' => (!empty($seur_order->phone) ? $seur_order->phone : $seur_order->phone_mobile),
-                            'movil' => (!empty($seur_order->phone_mobile) ? $seur_order->phone_mobile : $seur_order->phone),
+                            'telefono_consignatario' => SeurLib::cleanPhone(!empty($seur_order->phone) ? $seur_order->phone : $seur_order->phone_mobile),
+                            'movil' => SeurLib::cleanPhone(!empty($seur_order->phone_mobile) ? $seur_order->phone_mobile : $seur_order->phone),
                             'name' => $name,
                             'companyia' => $datospos['company'],
                             'email_consignatario' => Validate::isLoadedObject($customer) ? $customer->email : '',

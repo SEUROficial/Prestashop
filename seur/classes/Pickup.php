@@ -79,7 +79,7 @@ class SeurPickup
                         'name' => $customer,
                         'idNumber' => $idNumber,
                         "accountNumber" => $merchant_data['ccc'].'-'.$merchant_data['franchise'],
-                        "phone" => $merchant_data['phone'],
+                        "phone" => SeurLib::cleanPhone($merchant_data['phone']),
                         "email" => $merchant_data['email']
                     ],
                     'sender' => [

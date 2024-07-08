@@ -221,15 +221,30 @@ $(document).ready(function () {
     });
 });
 
-
 $(document).on('change',"input[name='type_service']", function(){
     var id = $("input[name='type_service']:checked").val();
+   reloadServicesAndProducts(id);
+});
+$(document).on('change',"select[name='type_service']", function(){
+    var id = $("select[name='type_service']").val();
+    reloadServicesAndProducts(id);
+});
+
+$(document).ready(function(){
+    $("input[name='type_service']:checked").trigger('change');
+    $("select[name='type_service']").trigger('change');
+})
+
+function reloadServicesAndProducts(id){
+    var currentIndex = 'index.php?controller=AdminSeurCarrier';
+    seur_url_ajax = seur_url_basepath + "/modules/seur/ajax/";
+
     $.ajax({
         type: 'POST',
         headers: {"cache-control": "no-cache"},
         async: false,
         dataType: 'json',
-        url: currentIndex + '&token=' + token + '&' + 'rand=' + new Date().getTime(),
+        url: seur_url_ajax+'getServices.php',
         data : {
             ajax: 1,
             action: "services",
@@ -255,7 +270,7 @@ $(document).on('change',"input[name='type_service']", function(){
         headers: {"cache-control": "no-cache"},
         async: false,
         dataType: 'json',
-        url: currentIndex + '&token=' + token + '&' + 'rand=' + new Date().getTime(),
+        url: seur_url_ajax+'getProducts.php',
         data : {
             ajax: 1,
             action: "products",
@@ -270,19 +285,12 @@ $(document).on('change',"input[name='type_service']", function(){
                 if(v.id_seur_product == $("#product_prev").val())
                     selected = "selected";
 
-
                 $("#selectProduct").append('<option value="' + v.id_seur_product + '" '+selected+'>' + v.name + '</option>');
             })
 
         }
     });
-
-
-});
-
-$(document).ready(function(){
-    $("input[name='type_service']:checked").trigger('change');
-})
+}
 
 $(document).on('click','.view_order',function() {
     $('.module_seur_edit').toggle();
@@ -294,4 +302,28 @@ $(document).on('click','.new_account_ccc',function() {
     $(".form_datos_cuenta select").val(0);
     $("#id_seur_ccc").val("0");
 
+});
+
+$(document).on('change',"select[name='insured']", function() {
+    var url = "/modules/seur/ajax/saveInsured.php";
+    if (labeled==="0") {
+        $.ajax({
+            type: 'POST',
+            headers: {"cache-control": "no-cache"},
+            async: false,
+            url: url,
+            data: {
+                ajax: 1,
+                action: "saveInsured",
+                id_seur_order: id_seur_order,
+                insured: $(this).val()
+            },
+            dataType: "json",
+            error: function (data) {
+                console.log(data);
+            },
+            success: function (data) {
+            }
+        });
+    }
 });

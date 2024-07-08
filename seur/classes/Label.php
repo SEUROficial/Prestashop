@@ -168,7 +168,7 @@ class SeurLabel
             "receiver" => [
                 "name" => $preparedData['name'],
                 "idNumber" => $label_data['dni'],
-                "phone" => ($label_data['telefono_consignatario']??($label_data['movil']??'')),
+                "phone" => SeurLib::cleanPhone($label_data['telefono_consignatario']??($label_data['movil']??'')),
                 "email" => $label_data['email_consignatario'],
                 "contactName" => $preparedData['name'],
                 "address" => [
@@ -181,7 +181,7 @@ class SeurLabel
             "sender" => [
                 "name" =>  Configuration::get('SEUR2_MERCHANT_COMPANY'),
                 "idNumber" => Configuration::get('SEUR2_MERCHANT_NIF_DNI'),
-                "phone" => $merchant_data['phone'],
+                "phone" => SeurLib::cleanPhone($merchant_data['phone']),
                 "accountNumber" => $merchant_data['ccc'].'-'.$merchant_data['franchise'],
                 "email" => $merchant_data['email'],
                 "contactName" => Configuration::get('SEUR2_MERCHANT_COMPANY'),
@@ -197,8 +197,8 @@ class SeurLabel
         ];
 
         $comments = [];
-        if (($preparedData['servicio'] == 15) && ($preparedData['producto'] == 114)) {
-            // Envío nacional 48h, producto 'Fresh'
+        if (($preparedData['producto'] == 18 && $label_data['iso'] == 'ES' ) ||
+            ($preparedData['producto'] == 114 && $label_data['iso'] == 'FR')) {
             $comments[] = 'ENTREGA: ' . SeurLib::getDeliveryDate();
             $comments[] = 'TIPO: ' . SeurLib::getShipmentType($id_order);
         } else {
@@ -226,6 +226,13 @@ class SeurLabel
                 "currencyCode" => "EUR",
                 "amount" => $preparedData['valorReembolso'],
                 "codFee" => "D"
+            ];
+        }
+
+        if ($seur_order->insured) {
+            $data['insuredValue'] = [
+                "currencyCode" => "EUR",
+                "amount" => $order->total_paid
             ];
         }
 

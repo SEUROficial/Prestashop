@@ -51,6 +51,7 @@ class SeurOrder extends ObjectModel
     public $ecbs;
     public $parcelNumbers;
     public $label_files;
+    public $insured;
 
     /**
      * @see ObjectModel::$definition
@@ -98,6 +99,7 @@ class SeurOrder extends ObjectModel
             'ecbs' =>                  array('type' => self::TYPE_STRING, 'size' => 500),
             'parcelNumbers' =>         array('type' => self::TYPE_STRING, 'size' => 500),
             'label_files' =>           array('type' => self::TYPE_STRING, 'size' => 1000),
+            'insured' =>               array('type' => self::TYPE_BOOL),
         ),
     );
 

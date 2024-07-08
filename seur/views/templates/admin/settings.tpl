@@ -316,7 +316,7 @@
             <div class="alert alert-info">
                 {l s='You can set up a scheduled task to refresh the status of your shipments using the following URL:' mod='seur'}
                 <br><br>
-                <strong>{$module_url}/modules/seur/scripts/UpdateShipments.php?secret={$module_secret}</strong>
+                <strong>{$module_url}modules/seur/scripts/UpdateShipments.php?secret={$module_secret}</strong>
             </div>
             <div class="alert alert-info">
                 {l s='Alternatively, if you have access to the system console, you can create a CRON job like:' mod='seur'}
