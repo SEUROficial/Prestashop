@@ -658,18 +658,20 @@ function getSeurCollectionPoints()
 }
 
 function printPointsList(collectorPoints) {
-	$('#seurPudoContainer').html('');
-	$.each(collectorPoints, function (key, post_code) {
-		var html = $("<div><input type='radio' name='pickupPoint' id='pickupPoint' value='"+post_code.codCentro+"' required='required'> <span class='tittle'>" + post_code.company + "</span> - <span class='direccion'>" + post_code.address + "</span></div>").on('click', function () {
-			currentPoint = PointClick(post_code)
-		});
-		$('#seurPudoContainer').append(html);
-	});
-	$('#seurMap').remove();
-	$('.seurMapContainer').css({'position': 'relative', 'left': 'inherit', 'height': 'auto'});
-	listPoints.css({'position': 'relative', 'width': '100%', 'height': 'auto'});
-	$('#seurPudoContainer').css({'display' : 'block', 'padding': '0 0 15px 0'});
+  $('#seurPudoContainer').html('');
+  $.each(collectorPoints, function (key, post_code) {
+    var isChecked = key === 0 ? "checked='checked'" : ""; // La primera opción está seleccionada por defecto
+    var html = $("<div><input type='radio' name='pickupPoint' id='pickupPoint' value='" + post_code.codCentro + "' required='required' " + isChecked + "> <span class='tittle'>" + post_code.company + "</span> - <span class='direccion'>" + post_code.address + "</span></div>").on('click', function () {
+      currentPoint = PointClick(post_code);
+    });
+    $('#seurPudoContainer').append(html);
+  });
+  $('#seurMap').remove();
+  $('.seurMapContainer').css({'position': 'relative', 'left': 'inherit', 'height': 'auto'});
+  listPoints.css({'position': 'relative', 'width': '100%', 'height': 'auto'});
+  $('#seurPudoContainer').css({'display': 'block', 'padding': '0 0 15px 0'});
 }
+
 
 $('#pickupPoint').on('click', function () {
 	currentPoint = PointClick(currentPoint, post_code)

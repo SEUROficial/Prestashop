@@ -330,15 +330,7 @@ class SeurLib
 
         // Si está configurado el cambio automático de estado al etiquetar, cambiamos de estado.
         if (!$auto_create_label && Configuration::get('SEUR2_SENDED_ORDER') && $labeled) {
-            $id_state = Configuration::get('PS_OS_SHIPPING');
-            $order = new OrderCore($id_order);
-
-            if ($order->current_state != $id_state) {
-                $history = new OrderHistory();
-                $history->id_order = (int)$order->id;
-                $history->changeIdOrderState((int) $id_state, $id_order);
-                $history->addWithemail();
-            }
+            SeurLib::markAsSended($id_order);
         }
 
         $payment_module = Db::getInstance()->getValue('
@@ -355,6 +347,18 @@ class SeurLib
         }
 
         return $result ?? false;
+    }
+
+    public static function markAsSended($id_order) {
+        $id_state = Configuration::get('PS_OS_SHIPPING');
+        $order = new Order($id_order);
+
+        if ($order->current_state != $id_state) {
+            $history = new OrderHistory();
+            $history->id_order = (int)$order->id;
+            $history->changeIdOrderState((int) $id_state, $id_order, true);
+            $history->addWithemail();
+        }
     }
 
     public static function setSeurOrderExpeditionCode($id_order, $expeditionCode, $ecbs, $parcelNumbers, $label_files) {

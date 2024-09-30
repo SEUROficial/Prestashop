@@ -47,7 +47,7 @@ class Seur extends CarrierModule
     {
         $this->name = 'seur';
         $this->tab = 'shipping_logistics';
-        $this->version = '2.5.13';
+        $this->version = '2.5.14';
         $this->author = 'Seur';
         $this->need_instance = 0;
 
@@ -116,6 +116,9 @@ class Seur extends CarrierModule
 
         if (!$this->isRegisteredInHook('actionOrderEdited'))
             $this->registerHook('actionOrderEdited');
+
+        if (!$this->isRegisteredInHook('actionAdminControllerSetMedia'))
+            $this->registerHook('actionAdminControllerSetMedia');
     }
 
     /*************************************************************************************
@@ -138,9 +141,12 @@ class Seur extends CarrierModule
             || !$this->registerHook('adminOrder')
             || !$this->registerHook('updateCarrier')
             || !$this->registerHook('header')
+            || !$this->registerHook('displayHeader')
             || !$this->registerHook('actionValidateOrder')
             || !$this->registerHook('displayAdminOrder')
+            || !$this->registerHook('displayOrderConfirmation')
             || !$this->registerHook('actionOrderEdited')
+            || !$this->registerHook('actionAdminControllerSetMedia')
         ) {
             $this->l('Hooks not registered');
             return false;
@@ -148,11 +154,9 @@ class Seur extends CarrierModule
 
         if (version_compare(_PS_VERSION_, '1.7.0', '<')) {
             $this->registerHook('extraCarrier');
-            $this->registerHook('backOfficeHeader');
         } else {
             $this->registerHook('displayAfterCarrier');
             $this->registerHook('actionFrontControllerSetMedia');
-            $this->registerHook('displayBackOfficeHeader');
         }
 
         if (version_compare(_PS_VERSION_, '1.5.4', '<')) {
@@ -679,7 +683,8 @@ class Seur extends CarrierModule
         $success &= Configuration::deleteByName('SEUR2_SETTINGS_PICKUP');
         $success &= Configuration::deleteByName('SEUR2_GOOGLE_API_KEY');
 
-        $success &= Configuration::deleteByName('SEUR2_SENDED_ORDER');
+        $success &= Configuration::deleteByName('SEUR2_SENDED_ORDER'); //when create label
+        $success &= Configuration::deleteByName('SEUR2_SENDED_IN_MANIFEST'); // when generate manifest
 
         $success &= Configuration::deleteByName('SEUR2_R_EORI', '');
         $success &= Configuration::deleteByName('SEUR2_D_EORI', '');
@@ -804,9 +809,7 @@ class Seur extends CarrierModule
     /**
     * Add the CSS & JavaScript files you want to be loaded in the BO.
     */
-    public function hookBackOfficeHeader() {$this->_hookBackOfficeHeader();} // PS 1.6 or previous
-    public function hookDisplayBackOfficeHeader() {$this->_hookBackOfficeHeader();} // PS 1.7 or later
-    private function _hookBackOfficeHeader()
+    public function hookActionAdminControllerSetMedia()
     {
         $this->context->controller->addJquery();
         $this->context->controller->addJS($this->_path.'views/js/back.js');
@@ -820,7 +823,9 @@ class Seur extends CarrierModule
     /**
      * Add the CSS & JavaScript files you want to be added on the FO.
      */
-    public function hookHeader()
+    public function hookHeader() {$this->_hookHeader();} // PS 1.6 or previous
+    public function hookDisplayHeader() {$this->_hookHeader();} // PS 1.7 or later
+    public function _hookHeader()
     {
         if (version_compare(_PS_VERSION_, '1.7', '<')) {
             $this->context->controller->addCSS($this->_path . 'views/css/front.css');
@@ -971,6 +976,13 @@ class Seur extends CarrierModule
         $seurOrder->manifested = 0;
 
         $seurOrder->save();
+
+        return true;
+    }
+
+    public function hookDisplayOrderConfirmation($params)
+    {
+        $order = $params['order'];
 
         $auto_create_labels = Configuration::get('SEUR2_AUTO_CREATE_LABELS');
         $list_ccc = SeurCCC::getListCCC();
@@ -1259,7 +1271,8 @@ class Seur extends CarrierModule
         Configuration::updateValue("SEUR2_STATUS_RETURN_IN_PROGRESS", Tools::getValue("select_status_SEUR2_STATUS_RETURN_IN_PROGRESS"));
         Configuration::updateValue("SEUR2_STATUS_AVAILABLE_IN_STORE", Tools::getValue("select_status_SEUR2_STATUS_AVAILABLE_IN_STORE"));
         Configuration::updateValue("SEUR2_STATUS_CONTRIBUTE_SOLUTION", Tools::getValue("select_status_SEUR2_STATUS_CONTRIBUTE_SOLUTION"));
-        Configuration::updateValue("SEUR2_SENDED_ORDER", Tools::getValue("SEUR2_SENDED_ORDER"));
+        Configuration::updateValue("SEUR2_SENDED_ORDER", Tools::getValue("SEUR2_MARK_SENDED")==1?1:0);
+        Configuration::updateValue("SEUR2_SENDED_IN_MANIFEST", Tools::getValue("SEUR2_MARK_SENDED")==2?1:0);
         Configuration::updateValue("SEUR2_AUTO_CREATE_LABELS", Tools::getValue("SEUR2_AUTO_CREATE_LABELS"));
         if(Tools::getValue("SEUR2_AUTO_CREATE_LABELS_PAYMENTS_METHODS_AVAILABLE"))
             $auto_create_labels_payments_methods_available = implode(',', Tools::getValue("SEUR2_AUTO_CREATE_LABELS_PAYMENTS_METHODS_AVAILABLE"));
@@ -1391,11 +1404,18 @@ class Seur extends CarrierModule
                 'status_delivered' => Configuration::get('SEUR2_STATUS_DELIVERED'),
                 'google_key' => Configuration::get('SEUR2_GOOGLE_API_KEY'),
                 'capture_order' => Configuration::get('SEUR2_CAPTURE_ORDER'),
-                'sended_order' => Configuration::get('SEUR2_SENDED_ORDER'),
                 'auto_create_labels' => Configuration::get('SEUR2_AUTO_CREATE_LABELS'),
                 'auto_create_labels_payments_methods_available' => $auto_create_labels_payments_methods_available,
                 'auto_calculate_packages' => Configuration::get('SEUR2_AUTO_CALCULATE_PACKAGES'),
-            ));
+            )
+        );
+        if (Configuration::get('SEUR2_SENDED_ORDER')==1) {
+            $this->context->smarty->assign('sended_when', 1);
+        } elseif (Configuration::get('SEUR2_SENDED_IN_MANIFEST')==1) {
+            $this->context->smarty->assign('sended_when', 2);
+        } else {
+            $this->context->smarty->assign('sended_when', 0);
+        }
     }
 
     public function ajaxProcessActivateCashonDelivery()
@@ -1468,6 +1488,18 @@ class Seur extends CarrierModule
         }
         if (Configuration::get('SEUR2_MERCHANT_COMPANY')=='') {
             $error[] = $this->l('Field')." ".$this->l("COMPANY")." ".$this->l('is not defined');
+        }
+        if (Configuration::get('SEUR2_API_CLIENT_ID').''=='') {
+            $error[] = $this->l('Field')." ".$this->l("API CLIENT ID")." ".$this->l('is not defined');
+        }
+        if (Configuration::get('SEUR2_API_CLIENT_SECRET').''=='') {
+            $error[] = $this->l('Field')." ".$this->l("API CLIENT SECRET")." ".$this->l('is not defined');
+        }
+        if (Configuration::get('SEUR2_API_USERNAME').''=='') {
+            $error[] = $this->l('Field')." ".$this->l("API USERNAME")." ".$this->l('is not defined');
+        }
+        if (Configuration::get('SEUR2_API_PASSWORD').''=='') {
+            $error[] = $this->l('Field')." ".$this->l("API CLIENT PASSWORD")." ".$this->l('is not defined');
         }
 
         if (!isset($ccc['id_seur_ccc']) || $ccc['id_seur_ccc']==''){

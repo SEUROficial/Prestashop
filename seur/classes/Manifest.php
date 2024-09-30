@@ -66,6 +66,10 @@ class SeurManifest
             if (!$seurOrder->codfee) { $seurOrder->codfee = 0; }
             if (!$seurOrder->total_paid) { $seurOrder->total_paid = 0; }
             $seurOrder->save();
+
+            if (Configuration::get('SEUR2_SENDED_IN_MANIFEST')) {
+                SeurLib::markAsSended($order->id);
+            }
         }
 
         foreach ($merchants as $key => $orders)

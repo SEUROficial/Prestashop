@@ -1,6 +1,18 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2.5.14] - 2024-09-27
+
+### Fixed
+
+- Additional payments when SEUR2_SENDED_ORDER is active
+- Select default pick-up point when google maps api fails
+- JS/CSS scripts not enqueued on admin area
+
+### Added
+
+- Add option mark as shipped when generate manifest
+
 ## [2.5.13] - 2024-07-08
 
 ### Fixed

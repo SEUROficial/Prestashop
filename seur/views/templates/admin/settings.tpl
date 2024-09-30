@@ -273,17 +273,14 @@
         <div class="title_seur col-xs-12">{l s="Status Seur" mod='seur'}</div>
         <div class="box_seur col_xs_12 row">
             <div class="col-xs-12 col-md-12 col-lg-12">
-                <div class="label_seur">{l s='Set orders as sended' mod='seur'}</div>
-                <div class="input_seur">
-                <span class="switch prestashop-switch fixed-width-lg">
-                        <input type="radio" name="SEUR2_SENDED_ORDER" id="sendedOrder_on" value="1"
-                               {if $sended_order}checked="checked"{/if}>
-                        <label for="sendedOrder_on" class="radioCheck">{l s="Yes" mod="seur"}</label>
-                        <input type="radio" name="SEUR2_SENDED_ORDER" id="sendedOrder_off" value="0"
-                               {if !$sended_order}checked="checked"{/if}>
-                        <label for="sendedOrder_off" class="radioCheck">{l s="No" mod="seur"}</label>
-                        <a class="slide-button btn"></a>
-                </span>
+                <div class="label_seur">{l s='Cambiar automáticamente el estado de los pedidos a "Enviado":' mod='seur'}</div>
+                <div class="radio_seur">
+                    <input type="radio" name="SEUR2_MARK_SENDED" id="sended_off" value="0" {if $sended_when==0}checked="checked"{/if}>
+                    {l s="Nunca" mod="seur"}
+                    <input type="radio" name="SEUR2_MARK_SENDED" id="sended_labeled" value="1" {if $sended_when==1}checked="checked"{/if}>
+                    {l s="Al etiquetar" mod="seur"}
+                    <input type="radio" name="SEUR2_MARK_SENDED" id="sended_manifested" value="2" {if $sended_when==2}checked="checked"{/if}>
+                    {l s="Al generar el Manifiesto" mod="seur"}
                 </div>
             </div>
             <div class="col-xs-12 col-md-6 col-lg-3">
