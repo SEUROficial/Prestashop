@@ -47,7 +47,7 @@ class Seur extends CarrierModule
     {
         $this->name = 'seur';
         $this->tab = 'shipping_logistics';
-        $this->version = '2.5.14';
+        $this->version = '2.5.16';
         $this->author = 'Seur';
         $this->need_instance = 0;
 
@@ -811,7 +811,6 @@ class Seur extends CarrierModule
     */
     public function hookActionAdminControllerSetMedia()
     {
-        $this->context->controller->addJquery();
         $this->context->controller->addJS($this->_path.'views/js/back.js');
         $this->context->controller->addCSS($this->_path.'views/css/back.css');
 
@@ -823,8 +822,8 @@ class Seur extends CarrierModule
     /**
      * Add the CSS & JavaScript files you want to be added on the FO.
      */
-    public function hookHeader() {$this->_hookHeader();} // PS 1.6 or previous
-    public function hookDisplayHeader() {$this->_hookHeader();} // PS 1.7 or later
+    public function hookHeader() { return $this->_hookHeader();} // PS 1.6 or previous
+    public function hookDisplayHeader() { return $this->_hookHeader();} // PS 1.7 or later
     public function _hookHeader()
     {
         if (version_compare(_PS_VERSION_, '1.7', '<')) {
@@ -891,7 +890,6 @@ class Seur extends CarrierModule
         $orderStatus = $params['orderStatus'];
         $id_carrier = $order->id_carrier;
 
-
         $estados_cancelados = array();
         $estados_cancelados[] = Configuration::get('PS_OS_ERROR');
         $estados_cancelados[] = Configuration::get('PS_OS_CANCELED');
@@ -917,7 +915,6 @@ class Seur extends CarrierModule
             return true;
         }
 
-        $seurOrder = new SeurOrder();
         $seur_carrier_array = SeurLib::getSeurCarrier($id_carrier);
         $seur_carrier = new SeurCarrier($seur_carrier_array['id_seur_carrier']);
 
@@ -934,6 +931,7 @@ class Seur extends CarrierModule
             }
         }
 
+        $seurOrder = new SeurOrder();
         $seurOrder->id_order = $order->id;
         $seurOrder->numero_bultos = $numero_bultos;
         $seurOrder->id_status = 0;
@@ -952,21 +950,63 @@ class Seur extends CarrierModule
         $seurOrder->other = $address->other;
         $seurOrder->phone = SeurLib::cleanPhone($address->phone);
         $seurOrder->phone_mobile = SeurLib::cleanPhone($address->phone_mobile);
+        $seurOrder->address1 = $address->address1;
+        $seurOrder->address2 = $address->address2;
+        $seurOrder->postcode = $address->postcode;
+        $seurOrder->city = $address->city;
 
         /* Comprobamos si es una recogida en punto de venta */
         $pickup_point_info = SeurLib::getOrderPos((int)$params['order']->id_cart);
         if (!empty($pickup_point_info) && $pickup_point_info &&
-            SeurLib::isPickup($seurOrder->service, $seurOrder->product)) {
-            $seurOrder->address1 = $pickup_point_info['address'];
-            $seurOrder->address2 = "";
-            $seurOrder->postcode = $pickup_point_info['postal_code'];
-            $seurOrder->city = $pickup_point_info['city'];
-        }
-        else{
-            $seurOrder->address1 = $address->address1;
-            $seurOrder->address2 = $address->address2;
-            $seurOrder->postcode = $address->postcode;
-            $seurOrder->city = $address->city;
+            SeurLib::isPickup($seurOrder->service, $seurOrder->product))
+        {
+            $pudo_address1 = 'Pickup: ' . $pickup_point_info['company'] .' - ' . $pickup_point_info['id_seur_pos'];
+            $pudo_address2 = $pickup_point_info['address'];
+            $pudo_city = $pickup_point_info['city'];
+            $pudo_postcode = $pickup_point_info['postal_code'];
+
+            // Verificar si ya existe una dirección con los datos deseados
+            $id_address_pudo = SeurLib::getCustomerAddressId($order->id_customer, [
+                'address1' => $pudo_address1,
+                'address2' => $pudo_address2,
+                'city' => $pudo_city,
+                'postcode' => $pudo_postcode,
+                'id_country' => $address->id_country,
+            ]);
+
+            if (!$id_address_pudo) {
+                $newAddress = new Address();
+                $newAddress->id_customer = $order->id_customer;
+                $newAddress->company = '';
+                $newAddress->lastname = $address->lastname;
+                $newAddress->firstname = $address->firstname;
+                $newAddress->other = $address->other;
+                $newAddress->phone = $address->phone;
+                $newAddress->phone_mobile = $address->phone_mobile;
+                $newAddress->vat_number = $address->vat_number;
+                $newAddress->dni = $address->dni;
+                $newAddress->address1 = $pudo_address1;
+                $newAddress->address2 = $pudo_address2;
+                $newAddress->city = $pudo_city;
+                $newAddress->postcode = $pudo_postcode;
+                $newAddress->id_country = $address->id_country;
+                $newAddress->id_state = 0;
+                $newAddress->alias = $pickup_point_info['id_seur_pos'];
+                $newAddress->active = 1;
+                $newAddress->deleted = 1;
+
+                if ($newAddress->add()) {
+                    $id_address_pudo = $newAddress->id;
+                }
+            }
+            $order->id_address_delivery = $id_address_pudo;
+            $order->update();
+
+            $seurOrder->id_address_delivery = $id_address_pudo;
+            $seurOrder->address1 = $pudo_address1;
+            $seurOrder->address2 = $pudo_address2;
+            $seurOrder->postcode = $pudo_postcode;
+            $seurOrder->city = $pudo_city;
         }
 
         $seurOrder->cashondelivery = 0;
@@ -1057,16 +1097,17 @@ class Seur extends CarrierModule
             $pos_is_enabled = SeurCarrier::isPosActive();
 
             $seur_carriers_without_pos = '';
-            $seur_carrier_pos = '';
+            $seur_carriers_pos = '';
             foreach ($seur_carriers as $seur_carrier) {
                 if ($seur_carrier['shipping_type'] != 2) {
                     $seur_carriers_without_pos .= (int)$seur_carrier['id_carrier'] . ',';
                 }
                 else{
-                    $seur_carrier_pos = (int)$seur_carrier['id_carrier'];
+                    $seur_carriers_pos .= (int)$seur_carrier['id_carrier'] . ',';
                 }
             }
 
+            $seur_carriers_pos = trim($seur_carriers_pos, ',');
             $seur_carriers_without_pos = trim($seur_carriers_without_pos, ',');
 
             if ($process_type == '0')
@@ -1084,7 +1125,7 @@ class Seur extends CarrierModule
                 array(
                     'posEnabled' => $pos_is_enabled,
                     'cookie' => $this->context->cookie,
-                    'id_seur_pos' => $seur_carrier_pos,
+                    'id_seur_pos' => $seur_carriers_pos,
                     'seur_resto' => $seur_carriers_without_pos,
                     'src' => $this->_path.'img/unknown.gif',
                     'ps_version' => $ps_version,
@@ -1161,16 +1202,17 @@ class Seur extends CarrierModule
             $pos_is_enabled = SeurCarrier::isPosActive();
 
             $seur_carriers_without_pos = '';
-            $seur_carrier_pos = '';
+            $seur_carriers_pos = '';
             foreach ($seur_carriers as $seur_carrier) {
                 if ($seur_carrier['shipping_type'] != 2) {
                     $seur_carriers_without_pos .= (int)$seur_carrier['id_carrier'] . ',';
                 }
                 else{
-                    $seur_carrier_pos = (int)$seur_carrier['id_carrier'];
+                    $seur_carriers_pos .= (int)$seur_carrier['id_carrier'] . ',';
                 }
             }
 
+            $seur_carriers_pos = trim($seur_carriers_pos, ',');
             $seur_carriers_without_pos = trim($seur_carriers_without_pos, ',');
 
             if ($process_type == '0')
@@ -1179,7 +1221,7 @@ class Seur extends CarrierModule
             $this->context->smarty->assign(
                 array(
                     'posEnabled' => $pos_is_enabled,
-                    'id_seur_pos' => $seur_carrier_pos,
+                    'id_seur_pos' => $seur_carriers_pos,
                     'seur_resto' => $seur_carriers_without_pos,
                     'src' => $this->_path.'img/unknown.gif',
                     'ps_version' => version_compare(_PS_VERSION_, '1.5', '<') ? 'ps4' : 'ps5',

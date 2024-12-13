@@ -1103,10 +1103,14 @@ class SeurLib
 
     static function getSeurProductType($product) {
         $sql = "SELECT value
-                FROM ps_feature_product fp
-                inner join ps_feature_lang fl on fl.id_feature = fp.id_feature and fl.name = '".ProductType::PRODUCT_TYPE_ATTRIBUTE_CODE."'
-                inner join ps_feature_value_lang fvl on fvl.id_feature_value = fp.id_feature_value
-                where id_product=".$product['product_id']." and fvl.id_lang=". Context::getContext()->language->id;
+                FROM " . _DB_PREFIX_ . "feature_product fp
+                INNER JOIN " . _DB_PREFIX_ . "feature_lang fl
+                    ON fl.id_feature = fp.id_feature
+                    AND fl.name = '" . ProductType::PRODUCT_TYPE_ATTRIBUTE_CODE . "'
+                INNER JOIN " . _DB_PREFIX_ . "feature_value_lang fvl
+                    ON fvl.id_feature_value = fp.id_feature_value
+                WHERE id_product = " . (int)$product['product_id'] . "
+                AND fvl.id_lang = " . (int)Context::getContext()->language->id;
         return DB::getInstance()->getValue($sql);
     }
 
@@ -1124,5 +1128,18 @@ class SeurLib
     static function getServiceType($service_code){
         $sql = "SELECT id_seur_services_type FROM `" . _DB_PREFIX_ . "seur2_services` WHERE id_seur_services = " . $service_code;
         return Db::getInstance()->getValue($sql);
+    }
+
+    public static function getCustomerAddressId($customerId, $criteria): int
+    {
+        $query = new DbQuery();
+        $query->select('id_address');
+        $query->from('address');
+        $query->where('id_customer = ' . (int)$customerId);
+        foreach ($criteria as $field => $value) {
+            $query->where("$field = '" . pSQL($value) . "'");
+        }
+        $query->orderBy('id_address DESC');
+        return (int)Db::getInstance()->getValue($query);
     }
 }

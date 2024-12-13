@@ -108,7 +108,8 @@ function check_reembolsoSeur()
 	currentCarrierId = $('input[type="radio"]:checked', $(carrierTableInputContainer)).val();
 	if (typeof currentCarrierId !== 'undefined')
 		currentCarrierId = currentCarrierId.replace(',', '');
-	if(currentCarrierId == id_seur_pos){
+
+	if (currentCarrierIsSeurPickup(currentCarrierId)) {
 		if(map.attr('init') == 'false'){ map.removeClass('showmap').attr('init', 'true').css('position', 'absolute'); }
 		if(!map.hasClass('showmap')){ map.addClass('showmap').css('position', 'relative'); }
 		$('#reembolsoSEUR').hide();
@@ -139,31 +140,18 @@ function seurCarrierDisplayed(id_seur_pos)
 {
 	var displayed = false;
 
-	if (ps_version_seur == 'ps4')
-	{
-		$('#carrierTable input[type="radio"]').each(function()
-		{
-			if(Number($(this).val().replace(/[^0-9]+/g, '')) == Number(id_seur_pos))
-			{
-				displayed = true;
-			}
-		});
-	}
-	else if (ps_version_seur == 'ps5') {
-		$('.delivery_options input[type="radio"]').each(function () {
-			if (Number($(this).val().replace(/[^0-9]+/g, '')) == Number(id_seur_pos)) {
-				displayed = true;
-			}
-		});
-	}
-	else{
-		$('.delivery-options input[type="radio"]').each(function () {
-			if (Number($(this).val().replace(/[^0-9]+/g, '')) == Number(id_seur_pos)) {
-				displayed = true;
-			}
-		});
+	var selector = '.delivery-options input[type=\"radio\"]';
+	if (ps_version_seur == 'ps4') { selector = '#carrierTable input[type=\"radio\"]'; }
+	if (ps_version_seur == 'ps5') { selector = '.delivery_options input[type=\"radio\"]'; }
 
-	}
+	id_seur_pos_array = id_seur_pos.split(',');
+	id_seur_pos_array.forEach(function(id_seur_pos){
+		$(selector).each(function () {
+			if (Number($(this).val().replace(/[^0-9]+/g, '')) == Number(id_seur_pos)) {
+				displayed = true;
+			}
+		});
+	});
 
 	return displayed;
 }
@@ -279,9 +267,6 @@ function initSeurMaps()
 	}
 
 	id_carrier = "";
-	var id_seur_pos = $('#id_seur_pos').val();
-
-	first_time_id = id_seur_pos;
 
 	if(map.attr('init') == 'false' ){
 		map.attr('init','true').css('position','absolute');
@@ -301,17 +286,32 @@ function initSeurMaps()
 
 		currentCarrierId = currentCarrierId.replace(",", "");
 
-		if(currentCarrierId == id_seur_pos )
-		{
+		if (currentCarrierIsSeurPickup(currentCarrierId)) {
 			if ($('#seur_map_reload_config').val() == 1) {
 				if (!localStorage.getItem('seurPickup') || localStorage.getItem('seurPickup') == "false") {
 					localStorage.setItem('seurPickup', "true");
 					location.reload();
 				}
 			}
-			printMap();
-			setButtonProcessCarrier('disabled');
-			noSelectedPointInfo.fadeIn();
+
+		  // Localizar el elemento seleccionado
+		  const selectedDeliveryOption = $(`#delivery_option_${currentCarrierId}`).closest('.row.delivery-option.js-delivery-option');
+		  // Verificar que exista
+		  if (selectedDeliveryOption.length) {
+			// Buscar el div carrier-extra-content asociado
+			const carrierExtraContent = selectedDeliveryOption.next('.row.carrier-extra-content.js-carrier-extra-content');
+			// Si existe, mover los elementos dentro de él
+			if (carrierExtraContent.length) {
+			  carrierExtraContent.append(map);
+			  carrierExtraContent.append(seurPudoContainer);
+			  carrierExtraContent.append(noSelectedPointInfo);
+			  carrierExtraContent.append(collectionPointInfo);
+			}
+		  }
+		  setButtonProcessCarrier('disabled');
+		  noSelectedPointInfo.fadeIn();
+		  printMap();
+
 		} else {
 			setButtonProcessCarrier('enabled');
 			noSelectedPointInfo.fadeOut();
@@ -328,7 +328,7 @@ function initSeurMaps()
 function saveCollectorPoint(id_cart, post_codeData )
 {
 	var chosen_address_delivery = id_address_delivery.val();
-
+	localStorage.setItem('seur_pickupPoint', post_codeData.codCentro);
 	if (!(chosen_address_delivery in seur_token_))
 		var current_token = null;
 	else
@@ -549,7 +549,8 @@ function updateCarrierListOneStep(json)
 	{
 		currentCarrierId = $('input[type="radio"]:checked', $(carrierTableInputContainer)).val();
 		currentCarrierId = currentCarrierId.replace(",", "");
-		if(currentCarrierId == id_seur_pos )
+
+		if (currentCarrierIsSeurPickup(currentCarrierId))
 		{
 			(!map.hasClass("showmap") ? map.addClass('showmap').css('position','relative') : "" );
 		}
@@ -594,37 +595,44 @@ function getUserAddress(idAddress)
 }
 
 // Returns a new map with the customer address
-function printMap()
-{
+function printMap() {
 	usrAddress = getUserAddress(id_address_delivery.val());
 	points = getSeurCollectionPoints();
-
 	try {
-		geocoder = new google.maps.Geocoder();
-		geocoder.geocode({ 'address': usrAddress}, function(result, status)
-		{
-			if(status == google.maps.GeocoderStatus.OK )
-			{
-				gMaps.setCenter(result[0].geometry.location );
-				userMarker.setPosition(result[0].geometry.location );
-				$('.seurMapContainer').css({'position' : 'relative', 'left' : 'inherit'});
-				printCollectorPoints(points);
+		assignGlobalVariables();
+		if (ps_version_seur != 'ps7') {
+			currentCarrierId = $('input[type="radio"]:checked', $(carrierTableInputContainer)).val();
+		} else {
+			currentCarrierId = $('.delivery-options input[type="radio"]:checked').val();
+		}
+		currentCarrierId = currentCarrierId.replace(",", "");
 
-				check_reembolsoSeur();
+		if (currentCarrierIsSeurPickup(currentCarrierId)) {
+			map.removeClass('showmap').css('position', 'absolute');
+			printPointsList(points);
 
-				(!map.hasClass("showmap") ? map.addClass('showmap').css('position','relative') : "" );
+			geocoder = new google.maps.Geocoder();
+			geocoder.geocode({'address': usrAddress}, function (result, status) {
+				if (status == google.maps.GeocoderStatus.OK) {
+					gMaps.setCenter(result[0].geometry.location);
+					userMarker.setPosition(result[0].geometry.location);
+					$('.seurMapContainer').css({'position': 'relative', 'left': 'inherit', 'height': ''});
+					$('#seurMap').css({'position': '', 'left': ''});
+					$('#seurPudoContainer').css({'display': 'none'});
+					printCollectorPoints(points);
 
-				setButtonProcessCarrier($('#pos_selected').val() == "false"?'disabled':'enabled');
+					check_reembolsoSeur();
 
-				($('#reembolsoSEUR').is(":visible") ? $('#reembolsoSEUR').fadeOut() : "" );
-			}
-			else
-			{
-				map.removeClass('showmap').css('position','absolute');
-				printPointsList(points);
-			}
-		});
+					//(!map.hasClass("showmap") ? map.addClass('showmap').css('position', 'relative') : "");
 
+					setButtonProcessCarrier($('#pos_selected').val() == "false" ? 'disabled' : 'enabled');
+
+					($('#reembolsoSEUR').is(":visible") ? $('#reembolsoSEUR').fadeOut() : "");
+				} else {
+					console.error("Geocoder falló debido a: " + status);
+				}
+			});
+		}
 	} catch (error) {
 		console.error("Se produjo un error: " + error.message);
 	}
@@ -660,13 +668,17 @@ function getSeurCollectionPoints()
 function printPointsList(collectorPoints) {
   $('#seurPudoContainer').html('');
   $.each(collectorPoints, function (key, post_code) {
-    var isChecked = key === 0 ? "checked='checked'" : ""; // La primera opción está seleccionada por defecto
+	var isChecked = "";
+	if (post_code.codCentro === localStorage.getItem('seur_pickupPoint')) {
+		isChecked = "checked='checked'";
+		currentPoint = PointClick(post_code);
+	}
     var html = $("<div><input type='radio' name='pickupPoint' id='pickupPoint' value='" + post_code.codCentro + "' required='required' " + isChecked + "> <span class='tittle'>" + post_code.company + "</span> - <span class='direccion'>" + post_code.address + "</span></div>").on('click', function () {
       currentPoint = PointClick(post_code);
     });
     $('#seurPudoContainer').append(html);
   });
-  $('#seurMap').remove();
+  //$('#seurMap').remove();
   $('.seurMapContainer').css({'position': 'relative', 'left': 'inherit', 'height': 'auto'});
   listPoints.css({'position': 'relative', 'width': '100%', 'height': 'auto'});
   $('#seurPudoContainer').css({'display': 'block', 'padding': '0 0 15px 0'});
@@ -719,6 +731,10 @@ function printCollectorPoints(collectorPoints) {
 			currentMarker = markerClick(currentMarker, markers[key])
 		});
 
+		if (post_code.codCentro === localStorage.getItem('seur_pickupPoint')) {
+			currentMarker = markerClick(currentMarker, markers[key]);
+		}
+
 		listPoints.append(html);
 		listPoints.appendTo('.seurMapContainer');
 		listPoints.fadeIn();
@@ -737,35 +753,39 @@ function markerClick(currentMarker, marker){
 	}
 	marker.setIcon(baseDir+'modules/seur/views/img/puntoRecogidaSel.png');
 	marker.popup.open(gMaps, marker);
-	$('#id_seur_pos', collectionPointInfo).val(marker.post_codeData.codCentro );
+	localStorage.setItem('seur_pickupPoint', marker.post_codeData.codCentro);
+	//$('#id_seur_pos', collectionPointInfo).val(marker.post_codeData.codCentro );
+	$('#post_codeId', collectionPointInfo).val(marker.post_codeData.codCentro );
 	$('#post_codeCompany', collectionPointInfo).html(marker.post_codeData.company );
 	$('#post_codeAddress', collectionPointInfo).html(marker.post_codeData.address );
 	$('#post_codeCity', collectionPointInfo).html(marker.post_codeData.city );
 	$('#post_codePostalCode', collectionPointInfo).html(marker.post_codeData.post_code );
 	$('#post_codeTimetable', collectionPointInfo).html(marker.post_codeData.timetable );
 	$('#post_codePhone', collectionPointInfo).html(marker.post_codeData.phone );
-	if(!collectionPointInfo.is(":visible"))	{
-		collectionPointInfo.fadeIn();
-		noSelectedPointInfo.fadeOut();
-	}
+
+	collectionPointInfo.fadeIn();
+	noSelectedPointInfo.fadeOut();
+
 	currentMarker = marker;
 	saveCollectorPoint($('#id_cart_seur').val(), marker.post_codeData);
 	return currentMarker;
 }
 
 function PointClick(post_codeData){
+	localStorage.setItem('seur_pickupPoint', post_codeData.codCentro);
 	$("input[name=pickupPoint][value=" + post_codeData.codCentro + "]").attr('checked', 'checked');
-	$('#id_seur_pos', collectionPointInfo).val(post_codeData.codCentro);
+	//$('#id_seur_pos', collectionPointInfo).val(post_codeData.codCentro);
+	$('#post_codeId', collectionPointInfo).val(post_codeData.codCentro );
 	$('#post_codeCompany', collectionPointInfo).html(post_codeData.company);
 	$('#post_codeAddress', collectionPointInfo).html(post_codeData.address);
 	$('#post_codeCity', collectionPointInfo).html(post_codeData.city);
 	$('#post_codePostalCode', collectionPointInfo).html(post_codeData.post_code);
 	$('#post_codeTimetable', collectionPointInfo).html(post_codeData.timetable);
 	$('#post_codePhone', collectionPointInfo).html((post_codeData.phone==''?'-':post_codeData.phone));
-	if(!collectionPointInfo.is(":visible")) {
-		collectionPointInfo.fadeIn();
-		noSelectedPointInfo.fadeOut();
-	}
+
+	collectionPointInfo.fadeIn();
+	noSelectedPointInfo.fadeOut();
+
 	saveCollectorPoint($('#id_cart_seur').val(), post_codeData);
 	return true;
 }
@@ -810,4 +830,12 @@ function setButtonProcessCarrier(state)
 		$('button[name="confirmDeliveryOption"]').removeAttr("disabled");
 		$('#opc_payment_methods').show();
 	}
+}
+
+function currentCarrierIsSeurPickup(currentCarrierId) {
+	var id_seur_pos_array = $('#id_seur_pos').val().split(',');
+	if (id_seur_pos_array.indexOf(""+currentCarrierId) > -1) {
+		return true;
+	}
+	return false;
 }

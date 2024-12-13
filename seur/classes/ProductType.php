@@ -48,31 +48,64 @@ class ProductType
     }
 
     public function install() {
-
         $db = Db::getInstance();
         $link = $db->getLink();
 
+        // Iniciar transacción según el tipo de conexión
         if ($link instanceof \PDO) {
             $link->beginTransaction();
         } elseif ($link instanceof \mysqli) {
             $link->begin_transaction();
         }
+
         try {
-            $feature_id = FeatureCore::addFeatureImport(self::PRODUCT_TYPE_ATTRIBUTE_CODE);
-            $values = $this->getOptions();
-            foreach ($values as $value) {
-                FeatureValueCore::addFeatureValueImport($feature_id, $value);
+            // Comprobar si la característica ya existe
+            $feature_id = FeatureCore::getIdByName(self::PRODUCT_TYPE_ATTRIBUTE_CODE);
+            if (!$feature_id) {
+                // Si no existe, la creamos
+                $feature_id = FeatureCore::addFeatureImport(self::PRODUCT_TYPE_ATTRIBUTE_CODE);
+
+                // Añadir los valores
+                $values = $this->getOptions();
+                foreach ($values as $value) {
+                    FeatureValueCore::addFeatureValueImport($feature_id, $value);
+                }
+            } else {
+                // Verificar si los valores ya existen
+                $values = $this->getOptions();
+                foreach ($values as $value) {
+                    $valueExists = $this->existsFeatureValue($feature_id, $value);
+                    if (!$valueExists) {
+                        FeatureValueCore::addFeatureValueImport($feature_id, $value);
+                    }
+                }
             }
+
+            // Confirmar transacción
             if ($link->inTransaction()) {
                 $link->commit();
             }
             return true;
+
         } catch (Exception $e) {
-            SeurLib::log('ADD SEUR PRODUCT_TYPE FEATURE: '.$e->getMessage());
+            // Loguear errores
+            SeurLib::log('ADD SEUR PRODUCT_TYPE FEATURE: ' . $e->getMessage());
             if ($link->inTransaction()) {
                 $link->rollback();
             }
             return false;
         }
     }
+
+    public function existsFeatureValue($feature_id, $value) {
+        $sql = "SELECT COUNT(*)
+            FROM ps_feature_value_lang fvl
+            INNER JOIN ps_feature_value fv ON fvl.id_feature_value = fv.id_feature_value
+            WHERE fv.id_feature = " . (int)$feature_id . "
+              AND fvl.value = '" . pSQL($value) . "'";
+
+        return (bool)Db::getInstance()->getValue($sql);
+    }
+
+
 }

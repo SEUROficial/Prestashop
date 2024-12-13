@@ -1,6 +1,26 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2.5.16] - 2024-12-12
+
+### Fixed
+
+- Remove manual jQuery inclusion to prevent duplication in PrestaShop < 1.7.7
+- Overwrite TCPDF Output function
+- Save pickup address in Order and SeurOrder
+- Cache selected pudoId at localStorage
+- Relocation of pickup points
+- Refactoring method getSeurProductType
+- Improve pudo list
+
+## [2.5.15] - 2024-10-30
+
+### Fixed
+
+- Multiples Seur2Shop configs
+- Add extracondition to printMap
+- Fix hook header return
+
 ## [2.5.14] - 2024-09-27
 
 ### Fixed
