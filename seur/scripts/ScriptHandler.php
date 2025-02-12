@@ -9,10 +9,11 @@
 
 namespace Seur\Prestashop\Scripts;
 
+use Seur\Prestashop\LegacyLogger;
 use Seur\Prestashop\Interfaces\CommandHandlerFactory;
 use Seur\Prestashop\Interfaces\AuthorizationMiddleware;
-use Logger;
 
+require_once(_PS_MODULE_DIR_.'seur/classes/LegacyLogger.php');
 require_once(_PS_MODULE_DIR_.'seur/interfaces/CommandHandlerFactory.php');
 require_once(_PS_MODULE_DIR_.'seur/interfaces/AuthorizationMiddleware.php');
 
@@ -49,7 +50,8 @@ class ScriptHandler
             }
         } catch (\Exception $ex) {
             $message = "Unexpected error while processing command: " . $ex->getMessage() . ". Command execution aborted.";
-            Logger::addLog($message, 3); // 3 - Error
+            $logger = new LegacyLogger($this->getLogFile());
+            $logger->log(3, $message);
         }
     }
 
@@ -58,9 +60,17 @@ class ScriptHandler
         return $this->middleware->isAuthorized();
     }
 
+    private function getLogFile()
+    {
+        $file = $this->factory->getLogFile()??'script';
+        return _PS_MODULE_DIR_. '/seur/files/logs/'.$file.'_'.date('Ymd').'.log';
+    }
+
     private function dispatch(): void
     {
         $handler = $this->factory->create();
-        $handler->handle();
+        $result = $handler->handle();
+        $logger = new LegacyLogger($this->getLogFile());
+        $logger->log(1, json_encode($result)); // 1 - Information
     }
 }

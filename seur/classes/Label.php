@@ -89,7 +89,7 @@ class SeurLabel
         $claveReembolso = '';
         $valorReembolso = '';
 
-        if (isset($label_data['reembolso']) && ( !SeurLib::isInternationalShipping($label_data['iso']))) {
+        if (SeurLib::AddCODData($label_data)) {
             $claveReembolso = 'F';
             $valorReembolso = (float)$label_data['reembolso'];
         }
@@ -221,11 +221,11 @@ class SeurLabel
             ];
         }
 
-        if (SeurLib::isCODPayment($order)) {
+        if ((SeurLib::isCODPayment($order) || SeurLib::AddAllSeurCODPayments()) && $preparedData['valorReembolso'] > 0) {
             $data['codValue'] = [
                 "currencyCode" => "EUR",
                 "amount" => $preparedData['valorReembolso'],
-                "codFee" => "D"
+                "codFee" => SeurLib::AddAllSeurCODPayments() ? "P" : "D"
             ];
         }
 

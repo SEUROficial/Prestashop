@@ -15,7 +15,10 @@ if (!defined('SEUR_MODULE_NAME'))
 
 class SeurLib
 {
-	public static $baleares_states = array(
+    const CODPaymentName = 'SEUR Contra Reembolso';
+    const CODPaymentModule = 'seurcashondelivery';
+
+    public static $baleares_states = array(
 		'ES-IB' => 'Baleares'
 	);
 
@@ -970,6 +973,36 @@ class SeurLib
         $ccc = str_pad($merchant['ccc'], 7, "0", STR_PAD_LEFT);
         $customer_reference = self::getOrderReference($order);
         return $un.$ccc.$customer_reference;
+    }
+
+    public static function AddCOD(Order $order)
+    {
+        if (strcmp($order->module, 'seurcashondelivery') == 0 || SeurLib::AddAllSeurCODPayments()) {
+            return true;
+        }
+        return false;
+    }
+
+    public static function AddCODData($label_data)
+    {
+        if ((isset($label_data['reembolso']) && ( !SeurLib::isInternationalShipping($label_data['iso']))) || SeurLib::AddAllSeurCODPayments()) {
+            return true;
+        }
+        return false;
+    }
+
+    public static function AddAllSeurCODPayments()
+    {
+        return (defined('MODULE_SEUR_COD_4ALL_PAYMENTS') && MODULE_SEUR_COD_4ALL_PAYMENTS);
+    }
+
+    public static function getAllSeurCODPayments($orderReference)
+    {
+        $sql = "SELECT sum(amount) as total_paid 
+            FROM " . _DB_PREFIX_ . "order_payment 
+            where payment_method = '".self::CODPaymentName."' and order_reference = '".$orderReference."'";
+        $total_paid = Db::getInstance()->getValue($sql);
+        return $total_paid > 0 ? $total_paid : 0;
     }
 
     static function getLabelFileName($order, $label_file) {

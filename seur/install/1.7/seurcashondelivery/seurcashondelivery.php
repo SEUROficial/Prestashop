@@ -364,8 +364,9 @@ class SeurCashOnDelivery extends PaymentModule{
     {
         $order = new Order((int)Tools::getValue('id_order',0));
         $sql = "SELECT `module` FROM `"._DB_PREFIX_."orders` WHERE `id_cart` = ".(int)$params['cart']->id;
-        $modulo = Db::getInstance()->executeS($sql);
-        $modulo = $modulo[0]['module'];
+        $result = Db::getInstance()->executeS($sql);
+        $modulo = ($result && isset($result[0])) ? $result[0]['module'] : '';
+
         $total_paid = 0;
         $save_OK = false;
         if(Tools::isSubmit('total_paid_submit_seurcashondelivery'))

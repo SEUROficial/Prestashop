@@ -673,37 +673,11 @@ $sql[] = "INSERT INTO `"._DB_PREFIX_."seur2_european_countries` (`id`, `iso_code
 (26, 'SI', 'Eslovenia'),
 (27, 'SK', 'Eslovaquia')";
 
-$query = "SELECT count(*) as existe FROM INFORMATION_SCHEMA.COLUMNS 
-             WHERE table_name = '"._DB_PREFIX_."seur2_order'
-             AND column_name = 'ecbs'";
-$existe = Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($query);
-if (!$existe) {
-    $sql[] = "ALTER TABLE `"._DB_PREFIX_."seur2_order` ADD COLUMN ecbs varchar(500) NULL DEFAULT '';";
-}
 
-$query = "SELECT count(*) as existe FROM INFORMATION_SCHEMA.COLUMNS 
-             WHERE table_name = '"._DB_PREFIX_."seur2_order'
-             AND column_name = 'parcelNumbers'";
-$existe = Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($query);
-if (!$existe) {
-    $sql[] = "ALTER TABLE `"._DB_PREFIX_."seur2_order` ADD COLUMN parcelNumbers varchar(500) NULL DEFAULT '';";
-}
-
-$query = "SELECT count(*) as existe FROM INFORMATION_SCHEMA.COLUMNS 
-             WHERE table_name = '"._DB_PREFIX_."seur2_order'
-             AND column_name = 'expeditionCode'";
-$existe = Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($query);
-if (!$existe) {
-    $sql[] = "ALTER TABLE `"._DB_PREFIX_."seur2_order` ADD COLUMN expeditionCode varchar(255) NULL DEFAULT '';";
-}
-
-$query = "SELECT count(*) as existe FROM INFORMATION_SCHEMA.COLUMNS 
-             WHERE table_name = '"._DB_PREFIX_."seur2_order'
-             AND column_name = 'label_files'";
-$existe = Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($query);
-if (!$existe) {
-    $sql[] = "ALTER TABLE `"._DB_PREFIX_."seur2_order` ADD COLUMN label_files varchar(1000) NULL DEFAULT '';";
-}
+$sql[] = "ALTER TABLE `"._DB_PREFIX_."seur2_order` ADD COLUMN ecbs varchar(500) NULL DEFAULT '';";
+$sql[] = "ALTER TABLE `"._DB_PREFIX_."seur2_order` ADD COLUMN parcelNumbers varchar(500) NULL DEFAULT '';";
+$sql[] = "ALTER TABLE `"._DB_PREFIX_."seur2_order` ADD COLUMN expeditionCode varchar(255) NULL DEFAULT '';";
+$sql[] = "ALTER TABLE `"._DB_PREFIX_."seur2_order` ADD COLUMN label_files varchar(1000) NULL DEFAULT '';";
 
 $sql[] = "INSERT INTO `"._DB_PREFIX_."seur2_services` (id_seur_services, id_seur_services_type, name) 
             VALUES (77, 2, 'CLASSIC')";

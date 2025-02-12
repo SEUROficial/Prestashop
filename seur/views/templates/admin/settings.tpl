@@ -318,7 +318,7 @@
             <div class="alert alert-info">
                 {l s='Alternatively, if you have access to the system console, you can create a CRON job like:' mod='seur'}
                 <br><br>
-                <strong><code>* * * * * cd {$module_folder}/scripts; /usr/bin/php UpdateShipments.php</code></strong>
+                <strong><code>* * * * * curl -s {$module_url}modules/seur/scripts/UpdateShipments.php?secret={$module_secret}</code></strong>
             </div>
         </div>
     <div class='clearfix'>

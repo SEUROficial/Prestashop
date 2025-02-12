@@ -38,6 +38,7 @@ class UpdateShipmentsStatus implements CommandHandler
      * @var array
      */
     private $shipments_status;
+    const LOG_FILE = 'updateShipments';
 
     public function __construct()
     {
@@ -129,6 +130,7 @@ class UpdateShipmentsStatus implements CommandHandler
         array $expedition_status
     ) {
         try {
+            $this->initContext();
             $this->performUpdateShipmentStatus($shipment, $shipment_status, $expedition_status);
             $this->trackOperation($shipment, $shipment_status, $expedition_status);
         } catch (Exception $e) {
@@ -161,5 +163,20 @@ class UpdateShipmentsStatus implements CommandHandler
             'status' => $expedition_status['id_status'],
             'desc' => $shipment_status['expedicion']->description
         ];
+    }
+
+    private function initContext()
+    {
+        require_once _PS_ROOT_DIR_ . '/config/config.inc.php';
+        require_once _PS_ROOT_DIR_ . '/init.php';
+
+        $context = \Context::getContext();
+
+        if ($context->employee === null) {
+            //get first admin employee
+            $result = \Db::getInstance()->executeS('SELECT id_employee FROM '._DB_PREFIX_.'employee WHERE active = 1 AND id_profile = 1 ORDER BY id_employee ASC LIMIT 1');
+            $employeeId = $result && isset($result[0]) ? $result[0]['id_employee'] : 1;
+            $context->employee = New \Employee($employeeId);
+        }
     }
 }

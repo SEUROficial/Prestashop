@@ -22,4 +22,8 @@ class UpdateShipmentsStatusHandlerFactory implements CommandHandlerFactory
     {
         return new UpdateShipmentsStatus();
     }
+    public function getLogFile(): string
+    {
+        return UpdateShipmentsStatus::LOG_FILE;
+    }
 }

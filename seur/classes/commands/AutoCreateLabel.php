@@ -154,15 +154,20 @@ class AutoCreateLabel implements CommandHandler
                 'id_employee' => $id_employee['id_employee'] ?? 1,
             );
 
-            if (strcmp($order->module, 'seurcashondelivery') == 0) {
+            $label_data['clave_reembolso'] = "";
+            $label_data['valor_reembolso'] = "0";
+
+            if (Seurlib::AddCOD($order)) {
                 $rate_data['reembolso'] = (float)$order->total_paid;
                 $label_data['reembolso'] = (float)$order->total_paid;
                 $label_data['clave_reembolso'] = "F";
                 $label_data['valor_reembolso'] = (float)$order->total_paid;
-            }
-            else{
-                $label_data['clave_reembolso'] = "";
-                $label_data['valor_reembolso'] = "0";
+
+                if (SeurLib::AddAllSeurCODPayments()) {
+                    $total_seur_cod_paid = SeurLib::getAllSeurCODPayments($order->reference);
+                    $label_data['reembolso'] = (float)$total_seur_cod_paid;
+                    $label_data['valor_reembolso'] = (float)$total_seur_cod_paid;
+                }
             }
 
             /* COMPROBAMOS SI ES UN TRANSPORTISTA DE RECOGIDA EN PUNTO DE VENTA Y REESCRIBIMOS*/

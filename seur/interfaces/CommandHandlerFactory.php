@@ -14,4 +14,5 @@ require_once(_PS_MODULE_DIR_.'seur/interfaces/CommandHandler.php');
 interface CommandHandlerFactory
 {
     public function create(): CommandHandler;
+    public function getLogFile(): string;
 }

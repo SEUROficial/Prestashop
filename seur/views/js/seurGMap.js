@@ -29,6 +29,10 @@ $(document).ready(function()
 		initSeurCarriers();
 	});
 
+	$('.delivery-options input[type="radio"]').on('change', function (event ) {
+		initSeurCarriers();
+	});
+
 	$('#cgv').on('change', function()
 	{
 		check_reembolsoSeur();
@@ -143,7 +147,8 @@ function seurCarrierDisplayed(id_seur_pos)
 	var selector = '.delivery-options input[type=\"radio\"]';
 	if (ps_version_seur == 'ps4') { selector = '#carrierTable input[type=\"radio\"]'; }
 	if (ps_version_seur == 'ps5') { selector = '.delivery_options input[type=\"radio\"]'; }
-
+	if (!id_seur_pos) { return displayed; }
+	
 	id_seur_pos_array = id_seur_pos.split(',');
 	id_seur_pos_array.forEach(function(id_seur_pos){
 		$(selector).each(function () {
@@ -294,20 +299,36 @@ function initSeurMaps()
 				}
 			}
 
-		  // Localizar el elemento seleccionado
-		  const selectedDeliveryOption = $(`#delivery_option_${currentCarrierId}`).closest('.row.delivery-option.js-delivery-option');
-		  // Verificar que exista
-		  if (selectedDeliveryOption.length) {
-			// Buscar el div carrier-extra-content asociado
-			const carrierExtraContent = selectedDeliveryOption.next('.row.carrier-extra-content.js-carrier-extra-content');
-			// Si existe, mover los elementos dentro de él
-			if (carrierExtraContent.length) {
-			  carrierExtraContent.append(map);
-			  carrierExtraContent.append(seurPudoContainer);
-			  carrierExtraContent.append(noSelectedPointInfo);
-			  carrierExtraContent.append(collectionPointInfo);
-			}
-		  }
+      // Localizar el elemento seleccionado
+      const deliveryOptionInput = $(`#delivery_option_${currentCarrierId}`);
+      let selectedDeliveryOption;
+
+      // Caso 1: Buscar el ancestro directo con las clases específicas
+      selectedDeliveryOption = deliveryOptionInput.closest('.row.delivery-option.js-delivery-option');
+
+      // Caso 2: Si no se encuentra, buscar una estructura alternativa
+      if (!selectedDeliveryOption.length) {
+        selectedDeliveryOption = deliveryOptionInput.closest('.delivery-options-items');
+      }
+
+      // Verificar que exista
+      if (selectedDeliveryOption.length) {
+        // Buscar el contenedor donde se deben mover los elementos
+        let carrierExtraContent = selectedDeliveryOption.next('.row.carrier-extra-content.js-carrier-extra-content');
+
+        // Caso alternativo: Buscar dentro de la nueva estructura
+        if (!carrierExtraContent.length) {
+          carrierExtraContent = selectedDeliveryOption.find('.carrier-extra-content-new');
+        }
+
+        // Si se encuentra el contenedor, mover los elementos dentro de él
+        if (carrierExtraContent.length) {
+          carrierExtraContent.append(map);
+          carrierExtraContent.append(seurPudoContainer);
+          carrierExtraContent.append(noSelectedPointInfo);
+          carrierExtraContent.append(collectionPointInfo);
+        }
+      }
 		  setButtonProcessCarrier('disabled');
 		  noSelectedPointInfo.fadeIn();
 		  printMap();

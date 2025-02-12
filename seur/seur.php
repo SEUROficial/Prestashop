@@ -47,7 +47,7 @@ class Seur extends CarrierModule
     {
         $this->name = 'seur';
         $this->tab = 'shipping_logistics';
-        $this->version = '2.5.16';
+        $this->version = '2.5.17';
         $this->author = 'Seur';
         $this->need_instance = 0;
 
@@ -1772,6 +1772,7 @@ class Seur extends CarrierModule
 
                 $this->context->smarty->assign('insured', $seur_order['insured']);
                 $this->context->smarty->assign('id_seur_order', $seur_order['id_seur_order']);
+                $this->context->smarty->assign('seur_url_basepath', $this->context->link->getBaseLink($this->context->shop->id));
 
                 return $this->display(__FILE__, 'views/templates/admin/order_data.tpl');
 

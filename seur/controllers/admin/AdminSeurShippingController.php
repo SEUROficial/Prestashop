@@ -456,15 +456,20 @@ class AdminSeurShippingController extends ModuleAdminController
                     'back' => $back
                 );
 
-                if (strcmp($order->module, 'seurcashondelivery') == 0) {
+                $label_data['clave_reembolso'] = "";
+                $label_data['valor_reembolso'] = "0";
+
+                if (Seurlib::AddCOD($order)) {
                     $rate_data['reembolso'] = (float)$order->total_paid;
                     $label_data['reembolso'] = (float)$order->total_paid;
                     $label_data['clave_reembolso'] = "F";
                     $label_data['valor_reembolso'] = (float)$order->total_paid;
-                }
-                else{
-                    $label_data['clave_reembolso'] = "";
-                    $label_data['valor_reembolso'] = "0";
+
+                    if (SeurLib::AddAllSeurCODPayments()) {
+                        $total_seur_cod_paid = SeurLib::getAllSeurCODPayments($order->reference);
+                        $label_data['reembolso'] = (float)$total_seur_cod_paid;
+                        $label_data['valor_reembolso'] = (float)$total_seur_cod_paid;
+                    }
                 }
 
                 /* COMPROBAMOS SI ES UN TRANSPORTISTA DE RECOGIDA EN PUNTO DE VENTA Y REESCRIBIMOS*/
@@ -726,10 +731,10 @@ class AdminSeurShippingController extends ModuleAdminController
             $seur_order->product = $seur_carrier->product;
             $seur_order->total_paid = $order->total_paid_real;
 
-            if (SeurLib::isCODPayment($order) && $order->module != 'seurcashondelivery') {
+            if (SeurLib::isCODPayment($order) && $order->module != SeurLib::CODPaymentModule) {
                 //cambiar el método COD seleccionado al de seurcashondelivery
-                $order->payment = 'SEUR Contra Reembolso';
-                $order->module = 'seurcashondelivery';
+                $order->payment = SeurLib::CODPaymentName;
+                $order->module = SeurLib::CODPaymentModule;
 
                 $shipping_amount_tax_incl = $order->total_shipping_tax_incl; //ya actualizados al nuevo carrier (seur)
                 $shipping_amount_tax_excl = $order->total_shipping_tax_excl; //ya actualizados al nuevo carrier (seur)
