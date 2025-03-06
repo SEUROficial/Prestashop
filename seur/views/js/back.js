@@ -237,7 +237,7 @@ $(document).ready(function(){
 
 function reloadServicesAndProducts(id){
     var currentIndex = 'index.php?controller=AdminSeurCarrier';
-    seur_url_ajax = seur_url_basepath + "/modules/seur/ajax/";
+    seur_url_ajax = seur_url_basepath + "modules/seur/ajax/";
 
     $.ajax({
         type: 'POST',

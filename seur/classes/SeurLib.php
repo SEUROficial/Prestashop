@@ -143,7 +143,7 @@ class SeurLib
             FROM `"._DB_PREFIX_."seur2_order`
             WHERE DATE(date_labeled) = CURRENT_DATE()
             AND labeled = 1
-            AND product IN (SELECT group_concat(id_seur_product)
+            AND product IN (SELECT id_seur_product
                 FROM `"._DB_PREFIX_."seur2_products`
                 WHERE name like '%FRIO%')
             AND id_seur_ccc = ".$id_seur_ccc
@@ -640,45 +640,69 @@ class SeurLib
      * @return string json
      * */
     public static function sendCurl($url, $header, $data, $action, $queryparams = false, $file = false) {
-        if ($action=='POST') {
-            $curl = curl_init($url);
-            /* headers didn't need to be set, cURL automatically sets headers when
-               you pass an ARRAY into CURLOPT_POSTFIELDS -> (content-type: multipart/form-data; content-length...) */
-            curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
-
-            if ($queryparams) {
-                curl_setopt($curl, CURLOPT_POSTFIELDS, implode('&', $data));  // este para el token
-            } elseif ($file) {
-                curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
-            } else {
-                curl_setopt($curl, CURLOPT_POST, true);  // application/x-www-form-urlencoded
-                curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
-            }
-        } else {
-            $curl = curl_init($url . '?'. http_build_query($data));
-            curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
-            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $action);
+        if (defined('USE_API_PRE') && USE_API_PRE) {
+            $url = str_replace('https://servicios.api.seur.io', 'https://servicios.apipre.seur.io', $url);
         }
 
+        $curl = curl_init();
+
+        // Configurar encabezados
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
+
+        // Manejo según método HTTP
+        switch ($action) {
+            case 'POST':
+                curl_setopt($curl, CURLOPT_POST, true);
+                if ($queryparams) {
+                    curl_setopt($curl, CURLOPT_POSTFIELDS, implode('&', $data)); // Para el token
+                } elseif ($file) {
+                    curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+                } else {
+                    curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
+                }
+                break;
+
+            case 'PUT':
+                curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "PUT");
+                curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
+                break;
+
+            case 'GET':
+                if (!empty($data)) {
+                    $url .= '?' . http_build_query($data);
+                }
+                break;
+
+            default:
+                curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $action);
+                break;
+        }
+
+        // Configurar la URL después de procesar GET
+        curl_setopt($curl, CURLOPT_URL, $url);
+
+        // Opciones de seguridad y retorno
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 
         $result = curl_exec($curl);
-        if (json_decode($result) !==null ){
+
+        if (json_decode($result) !== null) {
             $result = json_decode($result);
         }
 
-        if (curl_errno($curl)){
-            SeurLib::showMessageError(null, "CURL ERROR: ".curl_error($curl), true);
+        if (curl_errno($curl)) {
+            SeurLib::showMessageError(null, "CURL ERROR: " . curl_error($curl), true);
             curl_close($curl);
             return false;
         }
+
         if (isset($result->error) || isset($result->errors)) {
-            SeurLib::log("CURL url: ".$url ."<br>
-                header: ". json_encode($header) ."<br>
-                params: ". json_encode($data) ."<br>
-                result: ". json_encode($result)
+            SeurLib::log("CURL url: " . $url . "<br>
+            header: " . json_encode($header) . "<br>
+            params: " . json_encode($data) . "<br>
+            result: " . json_encode($result)
             );
         }
 
@@ -697,12 +721,15 @@ class SeurLib
         if (isset(Context::getContext()->controller)) {
             if ($type==0) {
                 Context::getContext()->controller->errors[] = $msg;
+                Context::getContext()->cookie->errors_messages = $msg;
             }
             if ($type==1) {
                 Context::getContext()->controller->confirmations[] = $msg;
+                Context::getContext()->cookie->confirmations_messages = $msg;
             }
             if ($type==2) {
                 Context::getContext()->controller->warnings[] = $msg;
+                Context::getContext()->cookie->warnings_messages = $msg;
             }
         }
         if ($log) self::log($msg);
@@ -998,8 +1025,8 @@ class SeurLib
 
     public static function getAllSeurCODPayments($orderReference)
     {
-        $sql = "SELECT sum(amount) as total_paid 
-            FROM " . _DB_PREFIX_ . "order_payment 
+        $sql = "SELECT sum(amount) as total_paid
+            FROM " . _DB_PREFIX_ . "order_payment
             where payment_method = '".self::CODPaymentName."' and order_reference = '".$orderReference."'";
         $total_paid = Db::getInstance()->getValue($sql);
         return $total_paid > 0 ? $total_paid : 0;
@@ -1175,4 +1202,78 @@ class SeurLib
         $query->orderBy('id_address DESC');
         return (int)Db::getInstance()->getValue($query);
     }
+
+    public static function ShipmentDataUpdated($seur_order_old, $seur_order)
+    {
+        return $seur_order_old->firstname != $seur_order->firstname
+            || $seur_order_old->lastname != $seur_order->lastname
+            || $seur_order_old->phone != $seur_order->phone
+            || $seur_order_old->phone_mobile != $seur_order->phone_mobile
+            || $seur_order_old->dni != $seur_order->dni
+            || $seur_order_old->other != $seur_order->other
+            || $seur_order_old->address1 != $seur_order->address1
+            || $seur_order_old->address2 != $seur_order->address2;
+    }
+
+    public static function PackagesDataUpdated($packages_old, $packages)
+    {
+        return $packages_old != $packages;
+    }
+
+    public static function updateOrderAddress($seur_order)
+    {
+        $address = new Address();
+        $address->id_customer = (int)$seur_order->id_customer;
+        $address->id_country = (int)$seur_order->id_country;
+        $address->id_state = (int)$seur_order->id_state;
+        $address->alias = 'Seur';
+        $address->company = $seur_order->company;
+        $address->lastname = $seur_order->lastname;
+        $address->firstname = $seur_order->firstname;
+        $address->address1 = $seur_order->address1;
+        $address->address2 = $seur_order->address2;
+        $address->postcode = $seur_order->postcode;
+        $address->city = $seur_order->city;
+        $address->phone = $seur_order->phone;
+        $address->phone_mobile = $seur_order->phone_mobile;
+        $address->dni = $seur_order->dni;
+        $address->other = $seur_order->other;
+        $address->add();
+
+        $order = new Order($seur_order->id_order);
+        $order->id_address_delivery = $address->id;
+        $order->save();
+
+        $seur_order->id_address_delivery = $address->id;
+        $seur_order->save();
+    }
+
+    public static function updateSeurOrderWithParcels($seur_order, $response) {
+        // Verificar que la respuesta contiene los datos esperados
+        if (!isset($response->ecbs) || !isset($response->parcelNumbers)) {
+            SeurLib::showMessageError(null, 'Error 1', true);
+            return false;
+        }
+
+        try {
+            // Concatenar los valores de ecbs y parcelNumbers en formato separado por "-"
+            $seur_order->ecbs = implode('-', $response->ecbs);
+            $seur_order->parcelNumbers = implode('-', $response->parcelNumbers);
+
+            // Guardar los cambios en la base de datos
+            if (!$seur_order->save()) {
+                SeurLib::showMessageError(null, 'Error 2', true);
+                return false;
+            }
+
+            SeurLib::showMessageOK(null, "Parcels Added Successfully");
+            return true;
+
+        } catch (PrestaShopException $e) {
+            SeurLib::showMessageError(null, 'Error 3' .$e->getMessage(), true);
+
+            return false;
+        }
+    }
+
 }

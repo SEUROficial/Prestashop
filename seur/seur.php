@@ -47,7 +47,7 @@ class Seur extends CarrierModule
     {
         $this->name = 'seur';
         $this->tab = 'shipping_logistics';
-        $this->version = '2.5.17';
+        $this->version = '2.5.18';
         $this->author = 'Seur';
         $this->need_instance = 0;
 
@@ -234,8 +234,10 @@ class Seur extends CarrierModule
         Configuration::updateValue('SEUR2_URLWS_PICKUP_CANCEL','https://servicios.api.seur.io/pic/v1/collections/cancel');
         Configuration::updateValue('SEUR2_URLWS_PICKUPS',      'https://servicios.api.seur.io/pic/v1/pickups');
         Configuration::updateValue('SEUR2_URLWS_E',            'https://servicios.api.seur.io/pic/v1/tracking-services/simplified');
-        Configuration::updateValue('SEUR2_URLWS_ET',           'https://servicios.api.seur.io/pic/v1/shipments');
+        Configuration::updateValue('SEUR2_URLWS_ET',             'https://servicios.api.seur.io/pic/v1/shipments');
+        Configuration::updateValue('SEUR2_URLWS_SHIPMENT_UPDATE','https://servicios.api.seur.io/pic/v1/shipments/update');
         Configuration::updateValue('SEUR2_URLWS_LABELS',       'https://servicios.api.seur.io/pic/v1/labels');
+        Configuration::updateValue('SEUR2_URLWS_UPDATE_SHIPMENTS_ADD_PARCELS', 'https://servicios.api.seur.io/pic/v1/shipments/addpack');
 
         Configuration::updateValue('SEUR2_PICKUP_SERVICE', '1');
         Configuration::updateValue('SEUR2_PICKUP_PRODUCT', '2');
@@ -643,6 +645,8 @@ class Seur extends CarrierModule
         $success &= Configuration::deleteByName('SEUR2_URLWS_PICKUP_CANCEL');
         $success &= Configuration::deleteByName('SEUR2_URLWS_PICKUPS');
         $success &= Configuration::deleteByName('SEUR2_URLWS_LABELS');
+        $success &= Configuration::deleteByName('SEUR2_URLWS_SHIPMENT_UPDATE');
+        $success &= Configuration::deleteByName('SEUR2_URLWS_UPDATE_SHIPMENTS_ADD_PARCELS');
 
         $success &= Configuration::deleteByName('SEUR2_API_CLIENT_ID');
         $success &= Configuration::deleteByName('SEUR2_API_CLIENT_SECRET');
@@ -1652,6 +1656,25 @@ class Seur extends CarrierModule
     public function hookAdminOrder($params)
     {
         if ($this->isConfigured()) {
+
+            $conf = $errors = $warnings = '';
+            if (!empty(Context::getContext()->cookie->confirmations_messages)) {
+                $conf = Context::getContext()->cookie->confirmations_messages;
+                unset(Context::getContext()->cookie->confirmations_messages);
+            }
+            if (!empty(Context::getContext()->cookie->errors_messages)) {
+                $errors = Context::getContext()->cookie->errors_messages;
+                unset(Context::getContext()->cookie->errors_messages);
+            }
+            if (!empty(Context::getContext()->cookie->warnings_messages)) {
+                $warnings = Context::getContext()->cookie->warnings_messages;
+                unset(Context::getContext()->cookie->warnings_messages);
+            }
+            Context::getContext()->cookie->write();
+            $this->context->smarty->assign('conf', $conf);
+            $this->context->smarty->assign('errors', $errors);
+            $this->context->smarty->assign('warnings', $warnings);
+
             $this->context->controller->addCSS($this->_path . 'views/css/back.css');
             $order = new Order((int)$params['id_order']);
 
@@ -1718,7 +1741,14 @@ class Seur extends CarrierModule
                 $service_code = $seur_order['service'];
                 $city = $seur_order['city'];
                 $id_country = $seur_order['id_country'];
+                $country_name = Country::getNameById(Context::getContext()->language->id, $id_country);
                 $id_state = $seur_order['id_state'];
+                if ($id_state == 0) {
+                    $address = new Address($seur_order['id_address_delivery']);
+                    $state_name = $address->city;
+                } else {
+                    $state_name = State::getNameById($id_state);
+                }
                 $other = $seur_order['other'];
                 $countries = Country::getCountries(Context::getContext()->language->id);
                 $states = State::getStatesByIdCountry($id_country);
@@ -1746,6 +1776,8 @@ class Seur extends CarrierModule
                 $this->context->smarty->assign('city', $city);
                 $this->context->smarty->assign('id_country', $id_country);
                 $this->context->smarty->assign('id_state', $id_state);
+                $this->context->smarty->assign('country_name', $country_name);
+                $this->context->smarty->assign('state_name', $state_name);
                 $this->context->smarty->assign('other', $other);
                 $this->context->smarty->assign('states', $states);
                 $this->context->smarty->assign('countries', $countries);

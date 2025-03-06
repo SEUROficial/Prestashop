@@ -17,6 +17,61 @@ class SeurLabel
     const SHIPMENT_COMMENT_LENGTH = 50;
     const SHIPMENT_STREETNAME_LENGTH = 70;
 
+    public static function updateShipments($seur_order) {
+        if (!$seur_order->expeditionCode) {
+            // only save changes, shipment not created yet
+            return true;
+        }
+        try
+        {
+            $urlws = Configuration::get('SEUR2_URLWS_SHIPMENT_UPDATE');
+
+            $token = SeurLib::getToken();
+            if (!$token)
+                return false;
+
+            $headers[] = "Accept: */*";
+            $headers[] = "Content-Type: application/json";
+            $headers[] = "Authorization: Bearer ".$token;
+
+            $order = new Order((int)$seur_order->id_order);
+            $customer = new Customer((int)$order->id_customer);
+            $receiver = [
+                "name" => $seur_order->firstname . ' ' . $seur_order->lastname,
+                "street" => $seur_order->address1 . ' ' . $seur_order->address2,
+                "phone" => SeurLib::cleanPhone(!empty($seur_order->phone) ? $seur_order->phone : $seur_order->phone_mobile),
+                "mail" => Validate::isLoadedObject($customer) ? $customer->email : '',
+                "contact" => $seur_order->firstname . ' ' . $seur_order->lastname
+            ];
+
+            $data = [
+                "shipmentCode" => $seur_order->expeditionCode,
+                "receiver" => $receiver,
+                "observations" => $seur_order->other
+            ];
+            $response = SeurLib::sendCurl($urlws, $headers, $data, "PUT");
+
+            if (isset($response->errors)) {
+                SeurLib::showMessageError(null, 'Update Shipment Error: '.$response->errors[0]->detail, true);
+                return false;
+            }
+
+            if (isset($response->error)) {
+                SeurLib::showMessageError(null, 'Update Shipment Error: '.$response->error, true);
+                return false;
+            }
+
+            SeurLib::showMessageOK(null, "Shipment Updated OK");
+            return $response;
+        }
+        catch (PrestaShopException $e)
+        {
+            SeurLib::log('UPDATE SHIPMENTS - ' . $e->getMessage());
+            return false;
+        }
+
+    }
+
     public static function createLabels($id_order, $label_data, $merchant_data, $is_geolabel, $is_international, $auto_create_label = false)
     {
         try {
@@ -355,4 +410,62 @@ class SeurLabel
             return false;
         }
     }
+
+    public static function addParcelsToShipment($packages_old, $packages, $peso_packages, $expeditionCode) {
+
+        try {
+            // Obtener token de autenticación
+            $token = SeurLib::getToken();
+            if (!$token) {
+                SeurLib::showMessageError(null, 'Add Parcels Error: Missing token.', true);
+                return false;
+            }
+
+            // Configurar cabeceras para la API
+            $headers = [
+                "Accept: */*",
+                "Content-Type: application/json",
+                "Authorization: Bearer " . $token
+            ];
+
+            // Obtener la URL para añadir paquetes
+            $add_parcels_url = Configuration::get('SEUR2_URLWS_UPDATE_SHIPMENTS_ADD_PARCELS');
+
+            // Calcular cuántos bultos nuevos se deben añadir
+            $additional_bultos = $packages - $packages_old;
+
+            // Distribuir el peso entre los nuevos bultos
+            $new_parcels = [];
+            $peso_promedio = $peso_packages / $packages;
+
+            for ($i = 0; $i < $additional_bultos; $i++) {
+                $new_parcels[] = ["weight" => round($peso_promedio, 2)];
+            }
+
+            $data = [
+                "shipmentCode" => $expeditionCode,
+                "parcels" => $new_parcels
+            ];
+
+            $response = SeurLib::sendCurl($add_parcels_url, $headers, $data, "PUT");
+
+            if (isset($response->errors)) {
+                SeurLib::showMessageError(null, 'Add Parcels Error: ' . $response->errors[0]->detail, true);
+                return false;
+            }
+
+            if (isset($response->error)) {
+                SeurLib::showMessageError(null, 'Add Parcels Error: ' . $response->error, true);
+                return false;
+            }
+
+            return $response;
+
+        } catch (PrestaShopException $e) {
+            SeurLib::log('ADD PARCELS ERROR - ' . $e->getMessage());
+            return false;
+        }
+    }
+
+
 }

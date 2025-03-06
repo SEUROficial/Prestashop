@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2.5.18] - 2025-02-27
+
+### Added
+- Add Update shipment feature
+- Add packages feature
+
+### Fixed
+- Fix isPickupFrio
+- Fix seur_url_basepath not initialized in one case
+
 ## [2.5.17] - 2025-02-03
 
 ### Added

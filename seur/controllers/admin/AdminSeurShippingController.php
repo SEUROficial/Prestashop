@@ -268,6 +268,7 @@ class AdminSeurShippingController extends ModuleAdminController
                 'url_controller_returns' => $this->context->link->getAdminLink('AdminSeurReturns', true),
                 'img_path' => $this->module->getPath() . 'views/img/',
                 'module_path' => 'index.php?controller=AdminModules&configure=' . $this->module->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Tab::getIdFromClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
+                'seur_url_basepath' => $this->context->link->getBaseLink($this->context->shop->id),
             ));
 
         $selecttab = "shipping";
@@ -633,8 +634,9 @@ class AdminSeurShippingController extends ModuleAdminController
         $insured    = (int)Tools::getvalue('insured');
 
         $seur_order = SeurOrder::getByOrder($id_order);
-        $seur_order->numero_bultos  = $num_bultos;
-        $seur_order->peso_bultos    = $peso;
+        $seur_order_old = clone $seur_order;
+        //$seur_order->numero_bultos  = $num_bultos;
+        //$seur_order->peso_bultos    = $peso;
         $seur_order->firstname      = pSQL($firstname);
         $seur_order->lastname       = pSQL($lastname);
         $seur_order->phone          = pSQL($phone);
@@ -652,7 +654,30 @@ class AdminSeurShippingController extends ModuleAdminController
         $seur_order->service        = $service;
         $seur_order->insured        = $insured;
 
-        $seur_order->save();
+        if (SeurLib::ShipmentDataUpdated($seur_order_old, $seur_order)) {
+            if (SeurLabel::updateShipments($seur_order)) {
+                // Crear dirección de envío con estos datos y asignarla al pedido
+                SeurLib::updateOrderAddress($seur_order);
+            }
+        }
+
+        $packages_old = $seur_order_old->numero_bultos;
+        $packages = $num_bultos;
+        $peso_packages = $peso;
+
+        if (SeurLib::PackagesDataUpdated($packages_old, $packages) && $seur_order) {
+            // Comprobar si el número de bultos ha aumentado antes de actualizar el envío
+            if ($packages > $packages_old) {
+                $response = SeurLabel::addParcelsToShipment($packages_old, $packages, $peso_packages, $seur_order->expeditionCode);
+
+                // Si la respuesta es válida, actualizar seur_order con los nuevos datos
+                if ($response) {
+                    $seur_order->numero_bultos = $packages;
+                    $seur_order->peso_bultos = $peso_packages;
+                    SeurLib::updateSeurOrderWithParcels($seur_order, $response);
+                }
+            }
+        }
     }
 
     private function addOrder($id_order, $id_seur_carrier)

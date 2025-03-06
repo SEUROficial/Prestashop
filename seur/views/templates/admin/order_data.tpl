@@ -14,6 +14,17 @@
 		$('#shipping_table td:last-child').html('<a href="#seur"><button class="btn btn-default btn-disk pull-right" type="button" value="1"><i class="icon-eye"></i> {/literal}{l s='Ver desglose' mod='seur'}{literal}</button></a>');
 		{/literal}
 	</script>
+
+	{if isset($conf) && $conf}
+		<div class="alert alert-success">{$conf}</div>
+	{/if}
+	{if isset($errors) && $errors}
+		<div class="alert alert-danger">{$errors}</div>
+	{/if}
+	{if isset($warnings) && $warnings}
+		<div class="alert alert-warning">{$warnings}</div>
+	{/if}
+
 	<div id="panel-move">
 		<a name="seur" ></a>
 		<form action="{$url_edit_order}" method="post">
@@ -44,13 +55,13 @@
 				<div class="module_seur_num_paq">
 					<div>
 						<label>{l s='# pack' mod='seur'}</label>
-						<input type="text" name="num_bultos" value="{$num_bultos}" {if $labeled || $classic}readonly{/if}>
+						<input type="text" name="num_bultos" value="{$num_bultos}" {if $classic}readonly{/if}>
 					</div>
 				</div>
 				<div class="module_seur_weight">
 					<div>
 						<label>{l s='Weight' mod='seur'} Kgr.</label>
-						<input type="text" name="peso" value="{$peso}" {if $labeled}readonly{/if}>
+						<input type="text" name="peso" value="{$peso}">
 					</div>
 				</div>
 				<div class="module_seur_weight">
@@ -72,23 +83,18 @@
 						</select>
 					</div>
 				</div>
-				{*<div class="module_seur_weight">
-					<div>
-						<label>{l s='GEOLABEL' mod='seur'}</label>
-						<select name="id_seur_ccc" >
-							<option {if $geolabel == 0 } selected {/if} value="0">{l s='No' mod='seur'}</option>
-							<option {if $geolabel == 1 } selected {/if} value="1">{l s='Si' mod='seur'}</option>
-						</select>
-					</div>
-				</div>*}
 				<div class="module_seur_buttons">
 					{if !$labeled}
-						<a href="javascript:void(0);" class="view_order">{l s='Edit' mod='seur'}</a>
-						<button type="submit" class="save_order">{l s='Save' mod='seur'}</button>
+						<a href="javascript:void(0);" class="view_order"><i class="material-icons">edit</i> {l s='Edit' mod='seur'}</a>
+						<button type="submit" class="save_order"><i class="material-icons">save</i> {l s='Save' mod='seur'}</button>
 					{/if}
-					<a class="print_label" href="{$print_label}" >{l s='Print label' mod='seur'}</a>
+					{if $labeled}
+						<a href="javascript:void(0);" class="view_order"><i class="material-icons">update</i> {l s='Update' mod='seur'}</a>
+						<button type="submit" class="save_order"><i class="material-icons">save</i> {l s='Save' mod='seur'}</button>
+					{/if}
+					<a class="print_label" href="{$print_label}" ><i class="material-icons">print</i> {l s='Print label' mod='seur'}</a>
 					{if $send_to_digital_docu}
-						<a class="send_dd" href="{$send_digital_docu}" target="_self">{l s='Send to Digital Docu' mod='seur'}</a>
+						<a class="send_dd" href="{$send_digital_docu}" target="_self"><i class="material-icons">note</i> {l s='Send to Digital Docu' mod='seur'}</a>
 					{/if}
 				</div>
 			</div>
@@ -129,57 +135,72 @@
 					</div>
 					<div class="col-xs-12 col-sm-6">
 						<label>{l s='Postal Code' mod='seur'}</label>
-						<input type="text" name="postcode" value="{$postcode}">
+						<input type="text" name="postcode" value="{$postcode}" {if $labeled}readonly="readonly"{/if}>
 					</div>
 					<div class="col-xs-12 col-sm-6">
 						<label>{l s='City' mod='seur'}</label>
-						<input type="text" name="city" value="{$city}">
+						<input type="text" name="city" value="{$city}" {if $labeled}readonly="readonly"{/if}>
 					</div>
 					<div class="col-xs-12 col-sm-6">
 						<label>{l s='Country' mod='seur'}</label>
-						<select name="id_country">
-							{foreach from=$countries item=country}
-								<option value="{$country.id_country}" {if $country.id_country==$id_country}selected{/if}>{$country.name}</option>
-							{/foreach}
-						</select>
+						{if $labeled}
+							<input type="hidden" name="id_country" value="{$id_country}">
+							<input type="text" name="country_name" value="{$country_name}" readonly="readonly">
+						{else}
+							<select name="id_country">
+								{foreach from=$countries item=country}
+									<option value="{$country.id_country}" {if $country.id_country==$id_country}selected{/if}>{$country.name}</option>
+								{/foreach}
+							</select>
+						{/if}
 					</div>
 					<div class="col-xs-12 col-sm-6">
 						<label>{l s='State' mod='seur'}</label>
-						<select name="id_state">
-                            {foreach from=$states item=state}
-								<option value="{$state.id_state}" {if $state.id_state==$id_state}selected{/if}>{$state.name}</option>
-                            {/foreach}
-						</select>
+						{if $labeled}
+							<input type="hidden" name="id_state" value="{$id_state}">
+							<input type="text" name="state_name" value="{$state_name}" readonly="readonly">
+						{else}
+							<select name="id_state">
+								{foreach from=$states item=state}
+									<option value="{$state.id_state}" {if $state.id_state==$id_state}selected{/if}>{$state.name}</option>
+								{/foreach}
+							</select>
+						{/if}
 					</div>
-					<div class="col-xs-12 col-sm-6">
-						<label>{l s='Service Type' mod='seur'}</label>
-						<select name="type_service" id="type_service">
-							{foreach from=$services_types item=service_type}
-								<option value="{$service_type.id_seur_services_type}"
-										{if $shipping_type==$service_type.id_seur_services_type }selected{/if}>
-									{$service_type.name}
-								</option>
-							{/foreach}
-						</select>
-					</div>
-					<div class="col-xs-12 col-sm-6">
-						<label>{l s='Product Code' mod='seur'}</label>
-						<input type="hidden" id="product_prev" value="{$product_code}">
-						<select name="product" id="selectProduct">
-							{foreach from=$products key="key" item="item"}
-								<option value="{$key}" {if $product_code==$key }selected{/if}>{$item}</option>
-							{/foreach}
-						</select>
-					</div>
-					<div class="col-xs-12 col-sm-6">
-						<label>{l s='Service Code' mod='seur'}</label>
-						<input type="hidden" id="service_prev" value="{$service_code}">
-						<select name="service" id="selectService">
-							{foreach from=$services key="key" item="item"}
-								<option value="{$key}" {if $service_code==$key }selected{/if}>{$item}</option>
-							{/foreach}
-						</select>
-					</div>
+					{if $labeled}
+						<input type="hidden" name="product" value="{$product_code}">
+						<input type="hidden" name="service" value="{$service_code}">
+					{else}
+						<div class="col-xs-12 col-sm-6">
+							<label>{l s='Service Type' mod='seur'}</label>
+							<select name="type_service" id="type_service">
+								{foreach from=$services_types item=service_type}
+									<option value="{$service_type.id_seur_services_type}"
+											{if $shipping_type==$service_type.id_seur_services_type }selected{/if}>
+										{$service_type.name}
+									</option>
+								{/foreach}
+							</select>
+						</div>
+						<div class="col-xs-12 col-sm-6">
+							<label>{l s='Product Code' mod='seur'}</label>
+							<input type="hidden" id="product_prev" value="{$product_code}">
+							<select name="product" id="selectProduct">
+								{foreach from=$products key="key" item="item"}
+									<option value="{$key}" {if $product_code==$key }selected{/if}>{$item}</option>
+								{/foreach}
+							</select>
+						</div>
+						<div class="col-xs-12 col-sm-6">
+							<label>{l s='Service Code' mod='seur'}</label>
+							<input type="hidden" id="service_prev" value="{$service_code}">
+							<select name="service" id="selectService">
+								{foreach from=$services key="key" item="item"}
+									<option value="{$key}" {if $service_code==$key }selected{/if}>{$item}</option>
+								{/foreach}
+							</select>
+						</div>
+					{/if}
 					<div style="clear:both"></div>
 				</div>
 			</div>
