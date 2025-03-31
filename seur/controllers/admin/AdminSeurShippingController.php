@@ -223,7 +223,7 @@ class AdminSeurShippingController extends ModuleAdminController
             die();
         }
 
-        if (Tools::getValue('action') == "edit_order") {
+        if (Tools::getValue('action') == "edit_order" && Tools::getvalue('num_bultos')) {
             $id_order = Tools::getValue('id_order');
             $this->editOrder($id_order);
             $url = Context::getContext()->link->getAdminLink(
@@ -268,7 +268,7 @@ class AdminSeurShippingController extends ModuleAdminController
                 'url_controller_returns' => $this->context->link->getAdminLink('AdminSeurReturns', true),
                 'img_path' => $this->module->getPath() . 'views/img/',
                 'module_path' => 'index.php?controller=AdminModules&configure=' . $this->module->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Tab::getIdFromClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
-                'seur_url_basepath' => $this->context->link->getBaseLink($this->context->shop->id),
+                'seur_url_basepath' => seurLib::getBaseLink(),
             ));
 
         $selecttab = "shipping";
@@ -635,8 +635,6 @@ class AdminSeurShippingController extends ModuleAdminController
 
         $seur_order = SeurOrder::getByOrder($id_order);
         $seur_order_old = clone $seur_order;
-        //$seur_order->numero_bultos  = $num_bultos;
-        //$seur_order->peso_bultos    = $peso;
         $seur_order->firstname      = pSQL($firstname);
         $seur_order->lastname       = pSQL($lastname);
         $seur_order->phone          = pSQL($phone);
@@ -653,6 +651,14 @@ class AdminSeurShippingController extends ModuleAdminController
         $seur_order->product        = $product;
         $seur_order->service        = $service;
         $seur_order->insured        = $insured;
+
+        if (!$seur_order->expeditionCode) {
+            // only save changes, shipment not created yet
+            $seur_order->numero_bultos  = $num_bultos;
+            $seur_order->peso_bultos    = $peso;
+            $seur_order->save();
+            return true;
+        }
 
         if (SeurLib::ShipmentDataUpdated($seur_order_old, $seur_order)) {
             if (SeurLabel::updateShipments($seur_order)) {

@@ -1,80 +1,83 @@
-var bodyid;
-var ps_version_seur;
-var displayCarriers = false;
-var id_seur_pos;
+let bodyid;
+let ps_version_seur;
+let id_seur_pos;
+let seurGoogleApiKey;
+let validGoogleApiKey;
+let seurInitialized = false;
 
-var id_address_delivery;
-var collectionPointInfo;
-var noSelectedPointInfo;
-var seurPudoContainer;
-var listPoints;
+let id_address_delivery;
+let collectionPointInfo;
+let noSelectedPointInfo;
+let seurPudoContainer;
+let listPoints;
 
-var carrierTable;
-var carrierTableInput;
-var carrierTableInputContainer;
+let carrierTable;
+let carrierTableInput;
+let carrierTableInputContainer;
 
-var currentCarrierId;
-var map;
-var gMaps;
+let currentCarrierId;
+let map;
+let gMaps;
+let userMarker;
+let seurMarkers = [];
+let selectedMarker;
+let infoWindow = new google.maps.InfoWindow({
+	disableAutoPan: true
+});
 
-var id_seur_RESTO_array;
+let id_seur_RESTO_array;
 
 $(document).ready(function()
 {
-	$('input[type="radio"][name="id_carrier"]').on('change', function () {
+	$('body').on('change',
+		'input[type="radio"][name="id_carrier"], ' +
+		'.delivery-option input[type="radio"], ' +
+		'.delivery-options input[type="radio"]', function () {
 		initSeurCarriers();
 	});
 
-	$('.delivery-option input[type="radio"]').on('change', function (event ) {
-		initSeurCarriers();
-	});
-
-	$('.delivery-options input[type="radio"]').on('change', function (event ) {
-		initSeurCarriers();
-	});
-
-	$('#cgv').on('change', function()
-	{
-		check_reembolsoSeur();
-	});
-	$('#recyclable').on('change', function()
-	{
-		check_reembolsoSeur();
-	});
-	$('#gift').on('change', function()
-	{
-		check_reembolsoSeur();
-	});
-	$('#id_address_delivery').on('change', function()
-	{
+	$('body').on('change', '#cgv, #recyclable, #gift, #id_address_delivery', function () {
 		check_reembolsoSeur();
 	});
 });
 
-function initSeurCarriers()
-{
-	displayCarriers = false;
-	assignGlobalVariables();
+async function initSeurCarriers() {
+	if (!seurInitialized) {
+		seurAssignGlobalVariables();
+		validGoogleApiKey = await isGoogleApiKeyValid(seurGoogleApiKey);
+		usrAddress = getUserAddress(id_address_delivery.val());
+		points = getSeurCollectionPoints();
+	}
+
 	cleanSeurMaps();
-	if (displayCarriers) {
-		initSeurMaps();
+	getCurrentCarrierId();
+	if (getDisplaySeurCarriers() && currentCarrierIsSeurPickup()) {
+		initContainers();
+		if (validGoogleApiKey) {
+			initSeurMaps();
+		} else {
+			initSeurPointList();
+		}
+		if (!localStorage.getItem('seur_pickupPoint')) {
+			noSelectedPointInfo.show();
+		}
 	}
 }
 
-function assignGlobalVariables()
-{
+async function seurAssignGlobalVariables() {
 	bodyid = $('body').attr('id');
-	ps_version_seur = $('#ps_version').val()??'ps5';
+	ps_version_seur = $('#ps_version').val() ?? 'ps5';
 
 	id_seur_pos = $('#id_seur_pos').val();
+	seurGoogleApiKey = $('#seurGoogleApiKey').val();
 
-	if ( $('#id_address_delivery').length ) {
+	if ($('#id_address_delivery').length) {
 		id_address_delivery = $('#id_address_delivery');
 	}
-	if ( $('#opc_id_address_delivery').length ) {
+	if ($('#opc_id_address_delivery').length) {
 		id_address_delivery = $('#opc_id_address_delivery');
 	}
-	if ( typeof AppOPC !== typeof undefined && $('#delivery_id').length ) {
+	if (typeof AppOPC !== typeof undefined && $('#delivery_id').length) {
 		id_address_delivery = $('#delivery_id');
 	}
 	collectionPointInfo = $('#collectionPointInfo');
@@ -87,33 +90,17 @@ function assignGlobalVariables()
 	carrierTableInputContainer = (ps_version_seur == 'ps4' ? '#carrierTable' : '#carrier_area .delivery_options');
 
 	$('#pos_selected').val('false');
-	var isSeurCarrierDisplayed = seurCarrierDisplayed(id_seur_pos);
-	if(ps_version_seur == 'ps4' && $('#carrierTable').length != 0 && isSeurCarrierDisplayed) {
-		displayCarriers = true;
-	}
-	else if (ps_version_seur == 'ps5' && $('.delivery_options').length != 0 && isSeurCarrierDisplayed) {
-		displayCarriers = true;
-	}
-	else if($('.delivery-options').length != 0 && isSeurCarrierDisplayed) {
-		displayCarriers = true;
-	}
 
-	map = $('<div />').attr('id', 'seurMap').attr('init', 'false');
-
-	if ($('#id_seur_RESTO').length > 0)
-	{
+	if ($('#id_seur_RESTO').length > 0) {
 		id_seur_RESTO = $('#id_seur_RESTO');
 		id_seur_RESTO_array = id_seur_RESTO.val().split(',');
 	}
+	seurInitialized = true;
 }
 
 function check_reembolsoSeur()
 {
-	currentCarrierId = $('input[type="radio"]:checked', $(carrierTableInputContainer)).val();
-	if (typeof currentCarrierId !== 'undefined')
-		currentCarrierId = currentCarrierId.replace(',', '');
-
-	if (currentCarrierIsSeurPickup(currentCarrierId)) {
+	if (currentCarrierIsSeurPickup()) {
 		if(map.attr('init') == 'false'){ map.removeClass('showmap').attr('init', 'true').css('position', 'absolute'); }
 		if(!map.hasClass('showmap')){ map.addClass('showmap').css('position', 'relative'); }
 		$('#reembolsoSEUR').hide();
@@ -131,13 +118,22 @@ function check_reembolsoSeur()
 	}
 }
 
-function getQuerystring(key, default_)
-{
-	if(default_==null){ default_=""; }
-	key = key.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
-	var regex = new RegExp("[\\?&]"+key+"=([^&#]*)");
-	var qs = regex.exec(window.location.href);
-	if(qs == null){ return default_; }else{ return qs[1]; }
+async function isGoogleApiKeyValid(apiKey) {
+	if (!apiKey) {
+		return false;
+	}
+
+	const url = 'https://maps.googleapis.com/maps/api/geocode/json?address=c/Jacinto%201,Cadiz,Spain&key=' + apiKey;
+	try {
+		const data = await $.getJSON(url); // Espera la respuesta
+		if (data.error_message) {
+			return false;
+		}
+		return true;
+	} catch (error) {
+		console.error("Error en la petición:", error);
+		return false;
+	}
 }
 
 function seurCarrierDisplayed(id_seur_pos)
@@ -161,195 +157,102 @@ function seurCarrierDisplayed(id_seur_pos)
 	return displayed;
 }
 
-function initSeurMaps()
-{
+function initSeurPointList() {
+	setButtonProcessCarrier('disabled');
+	printPointsList(points);
+	seurPudoContainer.show();
+}
+
+function initContainers() {
+	map = $('<div />').addClass('seurMapContainer').html(map);
 	$('span', map).css({ 'line-height' : '64px', 'font-size' : '50px' });
 
-	map = $('<div />').addClass('seurMapContainer').html(map);
-
-	if(ps_version_seur == 'ps4')
-	{
-		map.insertAfter($('#carrierTable'));
-	}
-	else if(ps_version_seur == 'ps5')
-	{
-		var pNavTmp = $("#carrier_area div.delivery_options_address:first");
-		map.insertAfter(pNavTmp);
-	}
-	else if(ps_version_seur == 'ps7')
-	{
-		var pNavTmp = $(".delivery-options");
-		map.insertAfter(pNavTmp);
-	}
-
-	noSelectedPointInfo.fadeOut();
-	collectionPointInfo.fadeOut();
-	seurPudoContainer.fadeOut();
+	carrierExtraContentDiv = selectedCarrierDiv();
+	map.appendTo(carrierExtraContentDiv);
 	noSelectedPointInfo.insertAfter(map);
 	collectionPointInfo.insertAfter(map);
 	seurPudoContainer.insertAfter(map);
+}
 
-	gMapOptions = {
+function initContainers() {
+	map = $('<div />').attr('id', 'seurMap').attr('init', 'false');
+	map = $('<div />').addClass('seurMapContainer').html(map);
+	$('span', map).css({ 'line-height' : '64px', 'font-size' : '50px' });
+
+	carrierExtraContentDiv = selectedCarrierDiv();
+	map.appendTo(carrierExtraContentDiv);
+	noSelectedPointInfo.insertAfter(map);
+	collectionPointInfo.insertAfter(map);
+	seurPudoContainer.insertAfter(map);
+}
+
+async function initSeurMaps()
+{
+	// Cargar las librerías necesarias
+	const {Map} = await google.maps.importLibrary("maps");
+	const {AdvancedMarkerElement} = await google.maps.importLibrary("marker");
+
+	gMaps = new google.maps.Map(document.getElementById('seurMap'), {
 		zoom: 13,
-		center: new google.maps.LatLng(0,0),
-		mapTypeId: google.maps.MapTypeId.ROADMAP,
-		noClear: true,
+		center: {lat: 0, lng: 0},
+		mapId: 'ROADMAP',
 		disableDefaultUI: true,
-		panControl:true,
-		zoomControl:true,
-		mapTypeControl:true,
-		scaleControl:true,
-		streetViewControl:true,
-		overviewMapControl:true,
-		rotateControl:true,
+		panControl: true,
+		zoomControl: true,
+		mapTypeControl: true,
+		scaleControl: true,
+		streetViewControl: true,
+		rotateControl: true,
 		keyboardShortcuts: false,
 		disableDoubleClickZoom: false,
 		draggable: true,
-		scrollwheel: true,
-		draggableCursor: 'move',
-		draggingCursor: 'move',
-		mapTypeControl: true,
-		navigationControl: true,
-		streetViewControl: true,
-		navigationControlOptions: {
-			position: google.maps.ControlPosition.TOP_RIGHT,
-			style: google.maps.NavigationControlStyle.ANDROID
-		},
-		scaleControl: false,
-		scaleControlOptions: {
-			position: google.maps.ControlPosition.BOTTOM_LEFT,
-			style: google.maps.ScaleControlStyle.SMALL
-		}
-	};
+		scrollwheel: true
+	});
 
-	currentMarker = null;
+	let userMarkerElement = document.createElement('div');
+	userMarkerElement.className = 'custom-marker';
+	userMarkerElement.innerHTML = '<img src="' + baseDir + 'modules/seur/views/img/user.png">';
 
-	gMaps = new google.maps.Map(document.getElementById('seurMap'), gMapOptions);
-
-	userMarker = new google.maps.Marker({
-		position: null,
+	userMarker = new google.maps.marker.AdvancedMarkerElement({
+		position: {lat: 0, lng: 0},
 		map: gMaps,
-		title: 'Direcci\u00f3n pr\u00f3xima a usted',
-		icon: baseDir + 'modules/seur/views/img/user.png',
-		cursor: 'default',
-		draggable: false
+		title: 'Dirección próxima a usted',
+		gmpClickable: true,
+		content: userMarkerElement,
 	});
 
 	// if one step checkout and ps5
-	if((bodyid == 'order-opc') && ps_version_seur == 'ps5')
-	{
+	if ((bodyid == 'order-opc') && ps_version_seur == 'ps5') {
 		carrier_value = $('input[type="radio"].delivery_option_radio').attr('name');
-
-		str = carrier_value;
-		cad_string = str.substring(str.indexOf('[') + 1,str.indexOf(']'));
-		// set value of onchange
-		$('.delivery_option_radio').each(function(){
-			carrier_value = $(this).attr('value');
-			$(this).on('change', null, function(){
-				updateOneStepCloser();
-			});
-		});
-		// add reload the page
-		$('#id_address_delivery').attr('onchange','updateAddressesDisplay(); updateAddressSelectionOneStep();');
+		delivery_option_selector = '.delivery_option_radio';
 	}
 
-	// if ps7
-	if(ps_version_seur == 'ps7')
-	{
+	if (ps_version_seur == 'ps7') {
 		carrier_value = $('.delivery-options input[type="radio"]').attr('name');
+		delivery_option_selector = '.delivery_option';
+	}
 
-		str = carrier_value;
-		cad_string = str.substring(str.indexOf('[') + 1,str.indexOf(']'));
-		// set value of onchange
-		$('.delivery_option').each(function(){
-			carrier_value = $(this).attr('value');
-			$(this).on('change', null, function(){
-				updateOneStepCloser();
-			});
+	str = carrier_value;
+	cad_string = str.substring(str.indexOf('[') + 1, str.indexOf(']'));
+	// set value of onchange
+	$(delivery_option_selector).each(function () {
+		carrier_value = $(this).attr('value');
+		$(this).on('change', null, function () {
+			updateOneStepCloser();
 		});
-		// add reload the page
-		$('#id_address_delivery').attr('onchange','updateAddressesDisplay(); updateAddressSelectionOneStep();');
-	}
+	});
+	// add reload the page
+	$('#id_address_delivery').attr('onchange', 'updateAddressesDisplay(); updateAddressSelectionOneStep();');
 
-	id_carrier = "";
-
-	if(map.attr('init') == 'false' ){
-		map.attr('init','true').css('position','absolute');
-	}
-
-	if ((ps_version_seur != 'ps7' && $('input[type="radio"]').is(':checked')) ||
-		(ps_version_seur == 'ps7' && $('.delivery-options input[type="radio"]').is(':checked')))
-	{
-		if(ps_version_seur != 'ps7')
-		{
-			currentCarrierId = $('input[type="radio"]:checked', $(carrierTableInputContainer)).val();
-		}
-		else
-		{
-			currentCarrierId = $('.delivery-options input[type="radio"]:checked').val();
-		}
-
-		currentCarrierId = currentCarrierId.replace(",", "");
-
-		if (currentCarrierIsSeurPickup(currentCarrierId)) {
-			if ($('#seur_map_reload_config').val() == 1) {
-				if (!localStorage.getItem('seurPickup') || localStorage.getItem('seurPickup') == "false") {
-					localStorage.setItem('seurPickup', "true");
-					location.reload();
-				}
-			}
-
-      // Localizar el elemento seleccionado
-      const deliveryOptionInput = $(`#delivery_option_${currentCarrierId}`);
-      let selectedDeliveryOption;
-
-      // Caso 1: Buscar el ancestro directo con las clases específicas
-      selectedDeliveryOption = deliveryOptionInput.closest('.row.delivery-option.js-delivery-option');
-
-      // Caso 2: Si no se encuentra, buscar una estructura alternativa
-      if (!selectedDeliveryOption.length) {
-        selectedDeliveryOption = deliveryOptionInput.closest('.delivery-options-items');
-      }
-
-      // Verificar que exista
-      if (selectedDeliveryOption.length) {
-        // Buscar el contenedor donde se deben mover los elementos
-        let carrierExtraContent = selectedDeliveryOption.next('.row.carrier-extra-content.js-carrier-extra-content');
-
-        // Caso alternativo: Buscar dentro de la nueva estructura
-        if (!carrierExtraContent.length) {
-          carrierExtraContent = selectedDeliveryOption.find('.carrier-extra-content-new');
-        }
-
-        // Si se encuentra el contenedor, mover los elementos dentro de él
-        if (carrierExtraContent.length) {
-          carrierExtraContent.append(map);
-          carrierExtraContent.append(seurPudoContainer);
-          carrierExtraContent.append(noSelectedPointInfo);
-          carrierExtraContent.append(collectionPointInfo);
-        }
-      }
-		  setButtonProcessCarrier('disabled');
-		  noSelectedPointInfo.fadeIn();
-		  printMap();
-
-		} else {
-			setButtonProcessCarrier('enabled');
-			noSelectedPointInfo.fadeOut();
-		}
-	}
-	else
-	{
-		if ($('#seur_map_reload_config').val() == 1) {
-			localStorage.setItem('seurPickup', "false");
-		}
-	}
+	setButtonProcessCarrier('disabled');
+	noSelectedPointInfo.fadeIn();
+	printMap();
 };
 
-function saveCollectorPoint(id_cart, post_codeData )
+function saveCollectorPoint(id_cart, postCodeData )
 {
 	var chosen_address_delivery = id_address_delivery.val();
-	localStorage.setItem('seur_pickupPoint', post_codeData.codCentro);
+	localStorage.setItem('seur_pickupPoint', postCodeData.codCentro);
 	if (!(chosen_address_delivery in seur_token_))
 		var current_token = null;
 	else
@@ -361,13 +264,13 @@ function saveCollectorPoint(id_cart, post_codeData )
 		data: {
 			savepos : true,
 			id_cart : encodeURIComponent(id_cart),
-			id_seur_pos : encodeURIComponent(post_codeData.codCentro),
-			company : encodeURIComponent(post_codeData.company),
-			address : encodeURIComponent(post_codeData.address),
-			city : encodeURIComponent(post_codeData.city),
-			post_code : encodeURIComponent(post_codeData.post_code),
-			phone : encodeURIComponent(post_codeData.phone),
-			timetable : encodeURIComponent(post_codeData.timetable),
+			id_seur_pos : encodeURIComponent(postCodeData.codCentro),
+			company : encodeURIComponent(postCodeData.company),
+			address : encodeURIComponent(postCodeData.address),
+			city : encodeURIComponent(postCodeData.city),
+			post_code : encodeURIComponent(postCodeData.post_code),
+			phone : encodeURIComponent(postCodeData.phone),
+			timetable : encodeURIComponent(postCodeData.timetable),
 			chosen_address_delivery : chosen_address_delivery,
 			token : encodeURIComponent(current_token)
 		},
@@ -533,7 +436,7 @@ function updateUserMapPosition()
 		if (status == google.maps.GeocoderStatus.OK)
 		{
 			gMaps.setCenter(result[0].geometry.location);
-			userMarker.setPosition(result[0].geometry.location );
+			userMarker.position = result[0].geometry.location;
 		}
 		else alert('updateUserMapPosition id_address: '+id_address_delivery.val()+' Error address in update the map: ' + status); // @TODO make translatable text
 	});
@@ -562,25 +465,18 @@ function updateCarrierListOneStep(json)
 			});
 		});
 	}
-	if(map.attr('init') == 'false')
-	{
+	if(map.attr('init') == 'false') {
 		map.removeClass('showmap').attr('init','true').css('position','absolute');
 	}
 	if($('input[type="radio"]').is(':checked'))
 	{
-		currentCarrierId = $('input[type="radio"]:checked', $(carrierTableInputContainer)).val();
-		currentCarrierId = currentCarrierId.replace(",", "");
-
-		if (currentCarrierIsSeurPickup(currentCarrierId))
-		{
+		if (currentCarrierIsSeurPickup()) {
 			(!map.hasClass("showmap") ? map.addClass('showmap').css('position','relative') : "" );
-		}
-		else
-		{
+		} else{
 			map.removeClass('showmap').css('position','absolute');
 		}
 
-		setButtonProcessCarrier($('#pos_selected').val() == "false"?'disabled':'enabled');
+		setButtonProcessCarrier($('#pos_selected').val() == "false" ? 'disabled' : 'enabled');
 
 		($('#reembolsoSEUR').is(":visible") ? $('#reembolsoSEUR').fadeOut() : "" );
 	}
@@ -609,7 +505,6 @@ function getUserAddress(idAddress)
 		},
 		error: function(xhr, ajaxOptions, thrownError)
 		{
-
 		}
 	});
 	return address;
@@ -617,45 +512,36 @@ function getUserAddress(idAddress)
 
 // Returns a new map with the customer address
 function printMap() {
-	usrAddress = getUserAddress(id_address_delivery.val());
-	points = getSeurCollectionPoints();
 	try {
-		assignGlobalVariables();
-		if (ps_version_seur != 'ps7') {
-			currentCarrierId = $('input[type="radio"]:checked', $(carrierTableInputContainer)).val();
-		} else {
-			currentCarrierId = $('.delivery-options input[type="radio"]:checked').val();
+		if (map.attr('init') == 'false') {
+			map.attr('init', 'true').css('position', 'absolute');
 		}
-		currentCarrierId = currentCarrierId.replace(",", "");
+		map.removeClass('showmap').css('position', 'absolute');
 
-		if (currentCarrierIsSeurPickup(currentCarrierId)) {
-			map.removeClass('showmap').css('position', 'absolute');
-			printPointsList(points);
+		geocoder = new google.maps.Geocoder();
+		geocoder.geocode({'address': usrAddress}, function (result, status) {
+			if (status == google.maps.GeocoderStatus.OK) {
+				gMaps.setCenter(result[0].geometry.location);
+				userMarker.position = result[0].geometry.location;
+				$('.seurMapContainer').css({'position': 'relative', 'left': 'inherit', 'height': ''});
+				$('#seurMap').css({'position': '', 'left': ''});
+				seurPudoContainer.hide();
+				printCollectorPoints(points);
 
-			geocoder = new google.maps.Geocoder();
-			geocoder.geocode({'address': usrAddress}, function (result, status) {
-				if (status == google.maps.GeocoderStatus.OK) {
-					gMaps.setCenter(result[0].geometry.location);
-					userMarker.setPosition(result[0].geometry.location);
-					$('.seurMapContainer').css({'position': 'relative', 'left': 'inherit', 'height': ''});
-					$('#seurMap').css({'position': '', 'left': ''});
-					$('#seurPudoContainer').css({'display': 'none'});
-					printCollectorPoints(points);
+				check_reembolsoSeur();
 
-					check_reembolsoSeur();
+				setButtonProcessCarrier($('#pos_selected').val() == "false" ? 'disabled' : 'enabled');
 
-					//(!map.hasClass("showmap") ? map.addClass('showmap').css('position', 'relative') : "");
+				($('#reembolsoSEUR').is(":visible") ? $('#reembolsoSEUR').fadeOut() : "");
+			} else {
+				console.error("Geocoder falló debido a: " + status);
+				seurPudoContainer.show();
+			}
+		});
 
-					setButtonProcessCarrier($('#pos_selected').val() == "false" ? 'disabled' : 'enabled');
-
-					($('#reembolsoSEUR').is(":visible") ? $('#reembolsoSEUR').fadeOut() : "");
-				} else {
-					console.error("Geocoder falló debido a: " + status);
-				}
-			});
-		}
 	} catch (error) {
 		console.error("Se produjo un error: " + error.message);
+		seurPudoContainer.show();
 	}
 }
 
@@ -687,152 +573,157 @@ function getSeurCollectionPoints()
 }
 
 function printPointsList(collectorPoints) {
-  $('#seurPudoContainer').html('');
-  $.each(collectorPoints, function (key, post_code) {
-	var isChecked = "";
-	if (post_code.codCentro === localStorage.getItem('seur_pickupPoint')) {
-		isChecked = "checked='checked'";
-		currentPoint = PointClick(post_code);
-	}
-    var html = $("<div><input type='radio' name='pickupPoint' id='pickupPoint' value='" + post_code.codCentro + "' required='required' " + isChecked + "> <span class='tittle'>" + post_code.company + "</span> - <span class='direccion'>" + post_code.address + "</span></div>").on('click', function () {
-      currentPoint = PointClick(post_code);
-    });
-    $('#seurPudoContainer').append(html);
-  });
-  //$('#seurMap').remove();
-  $('.seurMapContainer').css({'position': 'relative', 'left': 'inherit', 'height': 'auto'});
-  listPoints.css({'position': 'relative', 'width': '100%', 'height': 'auto'});
-  $('#seurPudoContainer').css({'display': 'block', 'padding': '0 0 15px 0'});
+	seurPudoContainer.html('');
+	$.each(collectorPoints, function (key, postCodeData) {
+		var isChecked = "";
+		if (postCodeData.codCentro === localStorage.getItem('seur_pickupPoint')) {
+			isChecked = "checked='checked'";
+			currentPoint = PointClick(postCodeData);
+		}
+		var html = $("<div><input type='radio' name='pickupPoint' id='pickupPoint' value='" + postCodeData.codCentro + "' required='required' " + isChecked + "> <span class='tittle'>" + postCodeData.company + "</span> - <span class='direccion'>" + postCodeData.address + "</span></div>").on('click', function () {
+			currentPoint = PointClick(postCodeData);
+		});
+		seurPudoContainer.append(html);
+	});
+	listPoints.css({'position': 'relative', 'width': '100%', 'height': 'auto', 'display': 'block'});
+	seurPudoContainer.css({'display': 'block', 'padding': '0 0 15px 0'});
 }
 
-
 $('#pickupPoint').on('click', function () {
-	currentPoint = PointClick(currentPoint, post_code)
+	currentPoint = PointClick(currentPoint, postCodeData)
 });
 
 function printCollectorPoints(collectorPoints) {
-	google.maps.Map.prototype.markers = new Array(); // Array the points of sale
-	google.maps.Marker.prototype.post_codeData = new Object();//Array the data of points of sale
-	google.maps.Marker.prototype.popup = new Object();// Array the data of points of sale popup
-	google.maps.Marker.prototype.savepost_codeData = function(data) {
-		this.post_codeData = data;
-	};
-	google.maps.Marker.prototype.savePopup = function(popup) {
-		this.popup = popup;
-	};
-	google.maps.Map.prototype.addMarker = function(marker) {
-		this.markers[this.markers.length] = marker;
-	};
-
 	clearMarkers();
 	listPoints = $('<div />').attr('id', 'listPoints');
-	var markers = [];
-	$.each(collectorPoints, function (key, post_code) {
-		latlng = new google.maps.LatLng(
-			parseFloat(post_code.position.lat),
-			parseFloat(post_code.position.lng)
-		);
-		marker = new google.maps.Marker({
-			position: new google.maps.LatLng(post_code.position.lat, post_code.position.lng),
+
+	collectorPoints.forEach((postCodeData , index) => {
+		let latlng = { lat: parseFloat(postCodeData.position.lat), lng: parseFloat(postCodeData.position.lng) };
+
+		// Crear contenedor del marcador
+		const iconContainer = document.createElement("div");
+
+		// Crear imágenes para el marcador
+		const iconSelected = document.createElement("img");
+		iconSelected.src = baseDir + 'modules/seur/views/img/puntoRecogidaSel.png';
+		iconSelected.className = "marker-icon";
+		iconSelected.style.display = "none";
+
+		const iconDefault = document.createElement("img");
+		iconDefault.src = baseDir + 'modules/seur/views/img/puntoRecogida.png';
+		iconDefault.className = "marker-icon";
+		iconDefault.style.display = "block";
+
+		// Añadir ambas imágenes al contenedor
+		iconContainer.appendChild(iconSelected);
+		iconContainer.appendChild(iconDefault);
+
+		let marker = new google.maps.marker.AdvancedMarkerElement({
+			position: latlng,
 			map: gMaps,
-			title: 'Seleccionar ' + post_code.company,
-			icon: baseDir + 'modules/seur/views/img/puntoRecogida.png',
-			cursor: 'default',
-			draggable: false
-		});
-		popup = new google.maps.InfoWindow({
-			content: "<h4>" + post_code.company + "</h4><p>" + post_code.address + "</p>"
-		});
-		gMaps.addMarker(marker);
-		marker.savepost_codeData(post_code);
-		marker.savePopup(popup);
-
-		markers[key] = marker;
-		var html = $("<div><span class='tittle'>" + post_code.company + "</span><p>" + post_code.address + "</p></div>").on('click', function () {
-			currentMarker = markerClick(currentMarker, markers[key])
+			title: `Seleccionar ${postCodeData.company}`,
+			gmpClickable: true,
+			content: iconContainer,
 		});
 
-		if (post_code.codCentro === localStorage.getItem('seur_pickupPoint')) {
-			currentMarker = markerClick(currentMarker, markers[key]);
-		}
+		seurMarkers.push({ marker, iconSelected, iconDefault, postCodeData });
+
+		marker.addListener('gmp-click', () => {
+			selectMarker(index);
+		});
+
+		let html = `<div class='list-item' data-index="${index}">
+						<span class='title'>${postCodeData.company}</span>
+						<p>${postCodeData.address}</p>
+					</div>`;
 
 		listPoints.append(html);
-		listPoints.appendTo('.seurMapContainer');
-		listPoints.fadeIn();
 
-		google.maps.event.addListener(marker, 'click', function () {
-			currentMarker = markerClick(currentMarker, this);
+		if (postCodeData.codCentro === localStorage.getItem('seur_pickupPoint')) {
+			selectMarker(index);
+		}
+	});
+
+	listPoints.appendTo('.seurMapContainer');
+	listPoints.fadeIn();
+
+	document.querySelectorAll(".list-item").forEach(item => {
+		item.addEventListener("click", function () {
+			const index = parseInt(this.getAttribute("data-index"));
+			selectMarker(index);
 		});
 	});
 }
-
-function markerClick(currentMarker, marker){
-
-	if(currentMarker != null ){
-		currentMarker.setIcon(baseDir+'modules/seur/views/img/puntoRecogida.png');
-		currentMarker.popup.close();
+function selectMarker(index) {
+	infoWindow.close();
+	if (selectedMarker) {
+		selectedMarker.iconSelected.style.display = "none";
+		selectedMarker.iconDefault.style.display = "block";
 	}
-	marker.setIcon(baseDir+'modules/seur/views/img/puntoRecogidaSel.png');
-	marker.popup.open(gMaps, marker);
-	localStorage.setItem('seur_pickupPoint', marker.post_codeData.codCentro);
-	//$('#id_seur_pos', collectionPointInfo).val(marker.post_codeData.codCentro );
-	$('#post_codeId', collectionPointInfo).val(marker.post_codeData.codCentro );
-	$('#post_codeCompany', collectionPointInfo).html(marker.post_codeData.company );
-	$('#post_codeAddress', collectionPointInfo).html(marker.post_codeData.address );
-	$('#post_codeCity', collectionPointInfo).html(marker.post_codeData.city );
-	$('#post_codePostalCode', collectionPointInfo).html(marker.post_codeData.post_code );
-	$('#post_codeTimetable', collectionPointInfo).html(marker.post_codeData.timetable );
-	$('#post_codePhone', collectionPointInfo).html(marker.post_codeData.phone );
 
-	collectionPointInfo.fadeIn();
-	noSelectedPointInfo.fadeOut();
+	selectedMarker = seurMarkers[index];
+	selectedMarker.iconSelected.style.display = "block";
+	selectedMarker.iconDefault.style.display = "none";
 
-	currentMarker = marker;
-	saveCollectorPoint($('#id_cart_seur').val(), marker.post_codeData);
-	return currentMarker;
+	gMaps.setCenter(selectedMarker.marker.position);
+	markerClick(selectedMarker.marker, selectedMarker.postCodeData);
+
+	// Obtener datos del punto seleccionado
+	const { company, address, schedule, phone } = selectedMarker.postCodeData;
+
+	// Contenido del InfoWindow
+	const contentString = `
+        <div style="max-width: 250px;">
+            <p><strong>${company}</strong>
+            <br>${address}</p>
+        </div>
+    `;
+
+	// Mostrar InfoWindow en la posición del marcador
+	infoWindow.setContent(contentString);
+	infoWindow.open(gMaps, selectedMarker.marker);
 }
 
-function PointClick(post_codeData){
-	localStorage.setItem('seur_pickupPoint', post_codeData.codCentro);
-	$("input[name=pickupPoint][value=" + post_codeData.codCentro + "]").attr('checked', 'checked');
-	//$('#id_seur_pos', collectionPointInfo).val(post_codeData.codCentro);
-	$('#post_codeId', collectionPointInfo).val(post_codeData.codCentro );
-	$('#post_codeCompany', collectionPointInfo).html(post_codeData.company);
-	$('#post_codeAddress', collectionPointInfo).html(post_codeData.address);
-	$('#post_codeCity', collectionPointInfo).html(post_codeData.city);
-	$('#post_codePostalCode', collectionPointInfo).html(post_codeData.post_code);
-	$('#post_codeTimetable', collectionPointInfo).html(post_codeData.timetable);
-	$('#post_codePhone', collectionPointInfo).html((post_codeData.phone==''?'-':post_codeData.phone));
+function markerClick(marker, postCodeData) {
+	updatePointInfo(postCodeData);
+	gMaps.setCenter(marker.position);
+}
 
-	collectionPointInfo.fadeIn();
-	noSelectedPointInfo.fadeOut();
-
-	saveCollectorPoint($('#id_cart_seur').val(), post_codeData);
+function PointClick(postCodeData){
+	updatePointInfo(postCodeData);
+	$("input[name=pickupPoint][value=" + postCodeData.codCentro + "]").attr('checked', 'checked');
+	noSelectedPointInfo.hide();
 	return true;
 }
 
-function clearMarkers(){
-	for(var i=0; i < gMaps.markers.length; i++){
-		gMaps.markers[i].setMap(null);
-	}
-	gMaps.markers = [];
+function updatePointInfo(postCodeData){
+	localStorage.setItem('seur_pickupPoint', postCodeData.codCentro);
+	$('#post_codeId', collectionPointInfo).val(postCodeData.codCentro );
+	$('#post_codeCompany', collectionPointInfo).html(postCodeData.company);
+	$('#post_codeAddress', collectionPointInfo).html(postCodeData.address);
+	$('#post_codeCity', collectionPointInfo).html(postCodeData.city);
+	$('#post_codePostalCode', collectionPointInfo).html(postCodeData.post_code);
+	$('#post_codeTimetable', collectionPointInfo).html(postCodeData.timetable);
+	$('#post_codePhone', collectionPointInfo).html((postCodeData.phone==''?'-':postCodeData.phone));
+
+	collectionPointInfo.fadeIn();
+	noSelectedPointInfo.fadeOut();
+
+	saveCollectorPoint($('#id_cart_seur').val(), postCodeData);
+}
+
+function clearMarkers() {
+	seurMarkers.forEach(marker => marker.map = null); // Elimina cada marcador del mapa
+	seurMarkers = []; // Vaciar el array
 }
 
 function cleanSeurMaps()
 {
-
-	if(ps_version_seur === 'ps7'){
-		$('div.seurMapContainer').remove();
-		noSelectedPointInfo.fadeOut();
-		collectionPointInfo.fadeOut();
-		listPoints.html();
-	}
-	else{
-		$('div.seurMapContainer').fadeOut();
-		noSelectedPointInfo.fadeOut();
-		collectionPointInfo.fadeOut();
-		listPoints.fadeOut();
-	}
+	$('div.seurMapContainer').remove();
+	seurPudoContainer.hide()
+	noSelectedPointInfo.hide();
+	collectionPointInfo.hide();
+	listPoints.remove();
 }
 
 function setButtonProcessCarrier(state)
@@ -852,11 +743,61 @@ function setButtonProcessCarrier(state)
 		$('#opc_payment_methods').show();
 	}
 }
+function getCurrentCarrierId() {
+	if (ps_version_seur != 'ps7') {
+		currentCarrierId = $('input[type="radio"]:checked', $(carrierTableInputContainer)).val();
+	} else {
+		currentCarrierId = $('.delivery-options input[type="radio"]:checked').val();
+	}
+	currentCarrierId = currentCarrierId.replace(",", "");
+}
 
-function currentCarrierIsSeurPickup(currentCarrierId) {
+function currentCarrierIsSeurPickup() {
 	var id_seur_pos_array = $('#id_seur_pos').val().split(',');
 	if (id_seur_pos_array.indexOf(""+currentCarrierId) > -1) {
 		return true;
 	}
 	return false;
+}
+
+function selectedCarrierDiv() {
+	// Localizar el elemento seleccionado
+	const deliveryOptionInput = $(`#delivery_option_${currentCarrierId}`);
+	let selectedDeliveryOption;
+
+	// Caso 1: Buscar el ancestro directo con las clases específicas
+	selectedDeliveryOption = deliveryOptionInput.closest('.row.delivery-option.js-delivery-option');
+
+	// Caso 2: Si no se encuentra, buscar una estructura alternativa
+	if (!selectedDeliveryOption.length) {
+		selectedDeliveryOption = deliveryOptionInput.closest('.delivery-options-items');
+	}
+
+	// Verificar que exista
+	if (selectedDeliveryOption.length) {
+		// Buscar el contenedor donde se deben mover los elementos
+		let carrierExtraContent = selectedDeliveryOption.next('.row.carrier-extra-content.js-carrier-extra-content');
+
+		// Caso alternativo: Buscar dentro de la nueva estructura
+		if (!carrierExtraContent.length) {
+			carrierExtraContent = selectedDeliveryOption.find('.carrier-extra-content-new');
+		}
+
+		// Si se encuentra el contenedor, mover los elementos dentro de él
+		if (carrierExtraContent.length) {
+			return carrierExtraContent;
+		}
+	}
+}
+
+function getDisplaySeurCarriers() {
+	const isSeurCarrierDisplayed = seurCarrierDisplayed(id_seur_pos);
+	if (!isSeurCarrierDisplayed) return false;
+
+	const carrierConditions = {
+		ps4: () => $('#carrierTable').length !== 0,
+		ps5: () => $('.delivery_options').length !== 0,
+		default: () => $('.delivery-options').length !== 0
+	};
+	return (carrierConditions[ps_version_seur] || carrierConditions.default)();
 }

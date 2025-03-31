@@ -71,27 +71,32 @@ class UpdateShipmentsStatus implements CommandHandler
 
     private function processSingleShipment(array $shipment)
     {
+        $failed = false;
+
         /* Consultar estado */
         $response = $this->getShipmentStatus($shipment);
         if (empty($response->data)) {
             $this->error_messages .= ' # '.$shipment['id_order'].' - no response data';
-            return;
+            $failed = true;
         }
 
         $shipment_status = $this->parseShipmentStatusResponse($response);
         if ( false === $shipment_status ) {
             $this->error_messages .= ' # '.$shipment['id_order'].' - no 4 matches';
-            return;
+            $failed = true;
         }
 
         $expedition_status = SeurOrder::getStatusExpedition($shipment_status['tipo_situ'], (int)$shipment_status['cod_situ']);
         if (!isset($expedition_status['id_status'])) {
             //echo "Error al actualizar estado pedido ".$shipment['id_order']."<br/>";
             $this->error_messages .= ' # '.$shipment['id_order'].' - id_status vacío. tipo_situ: '.$shipment_status['tipo_situ']. ' - cod_situ: '.$shipment_status['cod_situ'] ;
-            return;
+            $failed = true;
         }
 
-        $this->updateShipmentStatus($shipment, $shipment_status, $expedition_status);
+        $this->updateShipmentStatus($shipment, $shipment_status, $expedition_status, $failed);
+        if ($failed) {
+            return;
+        }
     }
 
     private function getShipmentStatus(array $shipment)
@@ -127,9 +132,14 @@ class UpdateShipmentsStatus implements CommandHandler
     private function updateShipmentStatus(
         array $shipment,
         array $shipment_status,
-        array $expedition_status
+        array $expedition_status,
+        bool $failed
     ) {
         try {
+            if ($failed) {
+                SeurOrder::updateQueryDateSeur($shipment['id_order'], true);
+                return;
+            }
             $this->initContext();
             $this->performUpdateShipmentStatus($shipment, $shipment_status, $expedition_status);
             $this->trackOperation($shipment, $shipment_status, $expedition_status);

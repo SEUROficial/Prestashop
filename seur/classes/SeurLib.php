@@ -1276,4 +1276,9 @@ class SeurLib
         }
     }
 
+    public static function getBaseLink()
+    {
+        return Context::getContext()->shop->getBaseURL(Configuration::get('PS_SSL_ENABLED'));
+    }
+
 }

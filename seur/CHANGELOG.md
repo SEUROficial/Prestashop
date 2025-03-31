@@ -1,6 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2.5.19] - 2025-03-31
+
+### Added
+- Add attemps to update shipments status
+
+### Changed
+- Refactor Seur GMap
+- Improve update shipment data
+
 ## [2.5.18] - 2025-02-27
 
 ### Added

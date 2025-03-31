@@ -71,15 +71,16 @@ if (Tools::getValue('id_address_delivery'))
             return false;
         }
         foreach ($response->data as $centro) {
+            $streetNumber = property_exists($centro, 'streetNumber')? ', '.(string)$centro->streetNumber : '';
             $centros[] = array(
                 'company' => (string)$centro->name,
-                'address' => (string)$centro->address.', '.(string)$centro->streetNumber,
+                'address' => (string)$centro->address . $streetNumber,
                 'address2' => 'PudoId: '.(string)$centro->pudoId,
                 'codCentro' => (string)$centro->pudoId,
                 'city' => (string)$centro->cityName,
                 'post_code' => (string)$centro->postalCode,
                 'phone' => '',
-                'gMapDir' => $centro->address.', '.$centro->streetNumber.', '.$centro->cityName,
+                'gMapDir' => $centro->address. $streetNumber .', '.$centro->cityName,
                 'position' => array('lat' => (float)$centro->latitude, 'lng' => (float)$centro->longitude),
                 'timetable' => (string)SeurLib::getTimeTable($centro->openingTime)
             );

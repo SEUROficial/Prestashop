@@ -55,7 +55,7 @@
 				<div class="module_seur_num_paq">
 					<div>
 						<label>{l s='# pack' mod='seur'}</label>
-						<input type="text" name="num_bultos" value="{$num_bultos}" {if $classic}readonly{/if}>
+						<input type="text" name="num_bultos" value="{$num_bultos}">
 					</div>
 				</div>
 				<div class="module_seur_weight">

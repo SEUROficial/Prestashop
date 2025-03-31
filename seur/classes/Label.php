@@ -18,10 +18,6 @@ class SeurLabel
     const SHIPMENT_STREETNAME_LENGTH = 70;
 
     public static function updateShipments($seur_order) {
-        if (!$seur_order->expeditionCode) {
-            // only save changes, shipment not created yet
-            return true;
-        }
         try
         {
             $urlws = Configuration::get('SEUR2_URLWS_SHIPMENT_UPDATE');

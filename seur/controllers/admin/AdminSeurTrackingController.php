@@ -173,7 +173,7 @@ class AdminSeurTrackingController extends ModuleAdminController
                 'url_controller_returns' => $this->context->link->getAdminLink('AdminSeurReturns', true),
                 'img_path' => $this->module->getPath() . 'views/img/',
                 'module_path' => 'index.php?controller=AdminModules&configure=' . $this->module->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Tab::getIdFromClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
-                'seur_url_basepath' => $this->context->link->getBaseLink($this->context->shop->id),
+                'seur_url_basepath' => seurLib::getBaseLink(),
             ));
 
         $selecttab = "tracking";
@@ -251,7 +251,7 @@ class AdminSeurTrackingController extends ModuleAdminController
                 'url_controller_returns' => $this->context->link->getAdminLink('AdminSeurReturns', true),
                 'img_path' => $this->module->getPath() . 'views/img/',
                 'module_path' => 'index.php?controller=AdminModules&configure=' . $this->module->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Tab::getIdFromClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
-                'seur_url_basepath' => $this->context->link->getBaseLink($this->context->shop->id),
+                'seur_url_basepath' => seurLib::getBaseLink(),
             ));
 
         $selecttab = "tracking";

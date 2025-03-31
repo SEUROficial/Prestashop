@@ -241,3 +241,7 @@ div#seurMap.showmap {
     -moz-transform: rotate(45deg);
     -o-transform: rotate(45deg);
 }
+
+.gm-ui-hover-effect {
+    display: none !important;
+}

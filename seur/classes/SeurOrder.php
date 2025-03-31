@@ -129,7 +129,8 @@ class SeurOrder extends ObjectModel
                 WHERE ecb != '' AND grupo !='ENTREGADO' 
                 AND o.current_state != ".Configuration::get('PS_OS_CANCELED')."
                 AND date_labeled > (DATE_SUB(CURDATE(), INTERVAL 1 MONTH))
-                AND date_query < (DATE_SUB(NOW(), INTERVAL 8 HOUR)) 
+                AND date_query < (DATE_SUB(NOW(), INTERVAL 8 HOUR))  
+                AND sq.failed_attempts < 3
                 ORDER BY so.id_order
                 LIMIT 25";
 
@@ -159,16 +160,18 @@ class SeurOrder extends ObjectModel
     }
 
 
-    public static function updateQueryDateSeur($id_order){
-
+    public static function updateQueryDateSeur($id_order, $failed_attempt = false)
+    {
         $sql = "SELECT date_query FROM `"._DB_PREFIX_."seur2_query` so WHERE id_order = ".(int)$id_order;
-
         $now = date("Y-m-d H:i:s");
 
         if(Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql)){
-            $query= 'UPDATE `'._DB_PREFIX_.'seur2_query` SET `date_query`= "'.$now.'" WHERE id_order = '.(int)$id_order;
+            $query = "UPDATE `"._DB_PREFIX_."seur2_query` 
+            SET `date_query`= '".$now."', `failed_attempts`= ". ($failed_attempt ? "failed_attempts + 1" : "0") .
+            " WHERE id_order = ". (int)$id_order;
         }else{
-            $query= 'INSERT INTO `'._DB_PREFIX_.'seur2_query`(`id_order`, `date_query`) VALUES ('.$id_order.',"'.$now.'")';
+            $query = "INSERT INTO `"._DB_PREFIX_."seur2_query` (`id_order`, `date_query`, `failed_attempts`) 
+            VALUES (".$id_order.", '".$now."', " . ($failed_attempt ? "1" : "0") . ")";
         }
         Db::getInstance(_PS_USE_SQL_SLAVE_)->Execute($query);
     }

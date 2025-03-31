@@ -47,7 +47,7 @@ class Seur extends CarrierModule
     {
         $this->name = 'seur';
         $this->tab = 'shipping_logistics';
-        $this->version = '2.5.18';
+        $this->version = '2.5.19';
         $this->author = 'Seur';
         $this->need_instance = 0;
 
@@ -737,7 +737,7 @@ class Seur extends CarrierModule
                 'img_path' => $this->_path . 'views/img/',
                 'module_path' => 'index.php?controller=AdminModules&configure=' . $this->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Tab::getIdFromClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
                 'lista_ccc' =>  SeurCCC::getListCCC(),
-                'module_url' => $this->context->link->getBaseLink($this->context->shop->id),
+                'module_url' => seurLib::getBaseLink(),
                 'module_secret' => Configuration::get('SEUR2_API_CLIENT_SECRET'),
                 'module_folder' => __DIR__
             ));
@@ -1133,7 +1133,8 @@ class Seur extends CarrierModule
                     'seur_resto' => $seur_carriers_without_pos,
                     'src' => $this->_path.'img/unknown.gif',
                     'ps_version' => $ps_version,
-                    'seur_map_reload_config' => Configuration::get('SEUR2_MAP_RELOAD_CONFIG')
+                    'seur_map_reload_config' => Configuration::get('SEUR2_MAP_RELOAD_CONFIG'),
+                    'seurGoogleApiKey' => Configuration::get('SEUR2_GOOGLE_API_KEY'),
                 )
             );
 
@@ -1229,7 +1230,8 @@ class Seur extends CarrierModule
                     'seur_resto' => $seur_carriers_without_pos,
                     'src' => $this->_path.'img/unknown.gif',
                     'ps_version' => version_compare(_PS_VERSION_, '1.5', '<') ? 'ps4' : 'ps5',
-                    'seur_map_reload_config' => Configuration::get('SEUR2_MAP_RELOAD_CONFIG')
+                    'seur_map_reload_config' => Configuration::get('SEUR2_MAP_RELOAD_CONFIG'),
+                    'seurGoogleApiKey' => Configuration::get('SEUR2_GOOGLE_API_KEY'),
                 )
             );
 
@@ -1804,7 +1806,7 @@ class Seur extends CarrierModule
 
                 $this->context->smarty->assign('insured', $seur_order['insured']);
                 $this->context->smarty->assign('id_seur_order', $seur_order['id_seur_order']);
-                $this->context->smarty->assign('seur_url_basepath', $this->context->link->getBaseLink($this->context->shop->id));
+                $this->context->smarty->assign('seur_url_basepath', seurLib::getBaseLink());
 
                 return $this->display(__FILE__, 'views/templates/admin/order_data.tpl');
 
