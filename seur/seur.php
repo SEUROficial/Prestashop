@@ -47,7 +47,7 @@ class Seur extends CarrierModule
     {
         $this->name = 'seur';
         $this->tab = 'shipping_logistics';
-        $this->version = '2.5.19';
+        $this->version = '2.5.21';
         $this->author = 'Seur';
         $this->need_instance = 0;
 
@@ -549,11 +549,12 @@ class Seur extends CarrierModule
             return false;
         }
 
+        /*
         if (!$this->deleteSettings()) {
 
             $this->_errors[] = $this->l('Error to Delete Settings');
             return false;
-        }
+        }*/
         return parent::uninstall();
     }
 
@@ -866,8 +867,8 @@ class Seur extends CarrierModule
 
             if (Tools::version_compare(_PS_VERSION_, '1.7', '<'))
             {
-                $this->context->controller->addJS($this->_path . 'views/js/seurGMap.js');
                 $this->context->controller->addJS($this->js_url);
+                $this->context->controller->addJS($this->_path . 'views/js/seurGMap.js');
             }
 
             $current_customer_addresses_ids = array();
@@ -1165,33 +1166,33 @@ class Seur extends CarrierModule
                         'inline' => false,
                     )
                 );
+
+                $this->context->controller->registerjavascript(
+                    $this->name . '-seurgmap',
+                    'modules/' . $this->name . '/views/js/seurGMap.js',
+                    array(
+                        'position' => 'bottom',
+                        'priority' => 150,
+                        'server' => 'local',
+                        'inline' => false,
+                    )
+                );
+
+                $this->context->controller->registerjavascript(
+                    $this->name . '-front',
+                    'modules/' . $this->name . '/views/js/frontMap.js',
+                    array(
+                        'position' => 'bottom',
+                        'priority' => 150,
+                        'server' => 'local',
+                        'inline' => false,
+                    )
+                );
             }
         }
 
         $this->context->controller->addCSS($this->_path.'views/css/seurGMap.css');
         $this->context->controller->addCSS($this->_path.'views/css/front.css');
-
-        $this->context->controller->registerjavascript(
-            $this->name . '-seurgmap',
-            'modules/' . $this->name . '/views/js/seurGMap.js',
-            array(
-                'position' => 'bottom',
-                'priority' => 150,
-                'server' => 'local',
-                'inline' => false,
-            )
-        );
-
-        $this->context->controller->registerjavascript(
-            $this->name . '-front',
-            'modules/' . $this->name . '/views/js/frontMap.js',
-            array(
-                'position' => 'bottom',
-                'priority' => 150,
-                'server' => 'local',
-                'inline' => false,
-            )
-        );
 
         Media::addJsDef(array(
            'baseDir' => __PS_BASE_URI__

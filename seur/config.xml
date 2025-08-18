@@ -2,7 +2,7 @@
 <module>
     <name>seur</name>
     <displayName><![CDATA[SEUR]]></displayName>
-    <version><![CDATA[2.5.7]]></version>
+    <version><![CDATA[2.5.21]]></version>
     <description><![CDATA[Manage your shipments with SEUR. Leader in the Express Shipping, National or International.]]></description>
     <author><![CDATA[Seur]]></author>
     <tab><![CDATA[shipping_logistics]]></tab>

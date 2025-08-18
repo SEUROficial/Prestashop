@@ -21,8 +21,8 @@ class ProductType
     {
     }
     /**
-         * @return array
-         */
+     * @return array
+     */
     public function toOptionArray()
     {
         return [
@@ -40,10 +40,10 @@ class ProductType
      */
     public function getOptions()
     {
-            $options = [];
-            foreach ($this->toOptionArray() as $option) {
-                   $options[$option['value']] = $option['label'];
-                }
+        $options = [];
+        foreach ($this->toOptionArray() as $option) {
+            $options[$option['value']] = $option['label'];
+        }
         return $options;
     }
 
@@ -60,7 +60,7 @@ class ProductType
 
         try {
             // Comprobar si la característica ya existe
-            $feature_id = FeatureCore::getIdByName(self::PRODUCT_TYPE_ATTRIBUTE_CODE);
+            $feature_id = $this->findFeature(self::PRODUCT_TYPE_ATTRIBUTE_CODE);
             if (!$feature_id) {
                 // Si no existe, la creamos
                 $feature_id = FeatureCore::addFeatureImport(self::PRODUCT_TYPE_ATTRIBUTE_CODE);
@@ -97,10 +97,23 @@ class ProductType
         }
     }
 
+    private function findFeature(string $name)
+    {
+        $defaultLangId = (int)Configuration::get('PS_LANG_DEFAULT');
+        $features = FeatureCore::getFeatures($defaultLangId);
+        foreach($features as $feature) {
+            if ($feature['name'] === $name) {
+                return intval($feature['id_feature']);
+            }
+        }
+
+        return null;
+    }
+
     public function existsFeatureValue($feature_id, $value) {
         $sql = "SELECT COUNT(*)
-            FROM ps_feature_value_lang fvl
-            INNER JOIN ps_feature_value fv ON fvl.id_feature_value = fv.id_feature_value
+            FROM " . _DB_PREFIX_ . "feature_value_lang fvl
+            INNER JOIN " . _DB_PREFIX_ . "feature_value fv ON fvl.id_feature_value = fv.id_feature_value
             WHERE fv.id_feature = " . (int)$feature_id . "
               AND fvl.value = '" . pSQL($value) . "'";
 

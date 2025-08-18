@@ -1,6 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2.5.21] - 2025-07-22
+### Fixed
+- Installation error (Attempted to call an undefined method named "getIdByName")
+- Pick-up points map not loaded for certain themes and one page checkout modules
+
+## [2.5.20] - 2025-05-05
+### Fixed
+- Undefined google variable and delivery address previous check
+
 ## [2.5.19] - 2025-03-31
 
 ### Added

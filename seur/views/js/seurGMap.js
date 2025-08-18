@@ -5,7 +5,7 @@ let seurGoogleApiKey;
 let validGoogleApiKey;
 let seurInitialized = false;
 
-let id_address_delivery;
+let id_address_delivery_seur;
 let collectionPointInfo;
 let noSelectedPointInfo;
 let seurPudoContainer;
@@ -29,14 +29,27 @@ let id_seur_RESTO_array;
 
 $(document).ready(function()
 {
-	$('body').on('change',
+	const body = $('body');
+	const delivery_id = $('#delivery_id');
+	body.on('change',
 		'input[type="radio"][name="id_carrier"], ' +
 		'.delivery-option input[type="radio"], ' +
 		'.delivery-options input[type="radio"]', function () {
 		initSeurCarriers();
 	});
 
-	$('body').on('change', '#cgv, #recyclable, #gift, #id_address_delivery', function () {
+	// One Page Checkout Prestashop by PresTeamShop
+	if (delivery_id.length && delivery_id.val() === '') {
+		body.on('change',
+			'#delivery_id_country, ' +
+			'#delivery_postcode, ' +
+			'#delivery_city, ' +
+			'#delivery_id_state', function () {
+				initSeurCarriers();
+			});
+	}
+
+	body.on('change', '#cgv, #recyclable, #gift, #id_address_delivery', function () {
 		check_reembolsoSeur();
 	});
 });
@@ -44,22 +57,24 @@ $(document).ready(function()
 async function initSeurCarriers() {
 	if (!seurInitialized) {
 		seurAssignGlobalVariables();
-		validGoogleApiKey = await isGoogleApiKeyValid(seurGoogleApiKey);
-		usrAddress = getUserAddress(id_address_delivery.val());
-		points = getSeurCollectionPoints();
 	}
+	if (seurInitialized) {
+		validGoogleApiKey = await isGoogleApiKeyValid(seurGoogleApiKey);
+		usrAddress = getUserAddress(id_address_delivery_seur.val());
+		points = getSeurCollectionPoints();
 
-	cleanSeurMaps();
-	getCurrentCarrierId();
-	if (getDisplaySeurCarriers() && currentCarrierIsSeurPickup()) {
-		initContainers();
-		if (validGoogleApiKey) {
-			initSeurMaps();
-		} else {
-			initSeurPointList();
-		}
-		if (!localStorage.getItem('seur_pickupPoint')) {
-			noSelectedPointInfo.show();
+		cleanSeurMaps();
+		getCurrentCarrierId();
+		if (getDisplaySeurCarriers() && currentCarrierIsSeurPickup()) {
+			initContainers();
+			if (validGoogleApiKey) {
+				initSeurMaps();
+			} else {
+				initSeurPointList();
+			}
+			if (!localStorage.getItem('seur_pickupPoint')) {
+				noSelectedPointInfo.show();
+			}
 		}
 	}
 }
@@ -72,13 +87,16 @@ async function seurAssignGlobalVariables() {
 	seurGoogleApiKey = $('#seurGoogleApiKey').val();
 
 	if ($('#id_address_delivery').length) {
-		id_address_delivery = $('#id_address_delivery');
+		id_address_delivery_seur = $('#id_address_delivery');
 	}
 	if ($('#opc_id_address_delivery').length) {
-		id_address_delivery = $('#opc_id_address_delivery');
+		id_address_delivery_seur = $('#opc_id_address_delivery');
 	}
-	if (typeof AppOPC !== typeof undefined && $('#delivery_id').length) {
-		id_address_delivery = $('#delivery_id');
+	if (typeof AppOPC !== typeof undefined && $('#delivery_id').length && $('#delivery_id').val() !== '') {
+		id_address_delivery_seur = $('#delivery_id');
+	}
+	if (typeof id_address_delivery_seur === 'undefined') {
+		return;
 	}
 	collectionPointInfo = $('#collectionPointInfo');
 	noSelectedPointInfo = $('#noSelectedPointInfo');
@@ -127,6 +145,7 @@ async function isGoogleApiKeyValid(apiKey) {
 	try {
 		const data = await $.getJSON(url); // Espera la respuesta
 		if (data.error_message) {
+			console.error("Error en la petición:", data.error_message);
 			return false;
 		}
 		return true;
@@ -144,7 +163,7 @@ function seurCarrierDisplayed(id_seur_pos)
 	if (ps_version_seur == 'ps4') { selector = '#carrierTable input[type=\"radio\"]'; }
 	if (ps_version_seur == 'ps5') { selector = '.delivery_options input[type=\"radio\"]'; }
 	if (!id_seur_pos) { return displayed; }
-	
+
 	id_seur_pos_array = id_seur_pos.split(',');
 	id_seur_pos_array.forEach(function(id_seur_pos){
 		$(selector).each(function () {
@@ -251,7 +270,7 @@ async function initSeurMaps()
 
 function saveCollectorPoint(id_cart, postCodeData )
 {
-	var chosen_address_delivery = id_address_delivery.val();
+	var chosen_address_delivery = id_address_delivery_seur.val();
 	localStorage.setItem('seur_pickupPoint', postCodeData.codCentro);
 	if (!(chosen_address_delivery in seur_token_))
 		var current_token = null;
@@ -429,7 +448,7 @@ function updateAddressSelectionOneStep()
 
 function updateUserMapPosition()
 {
-	usrAddress = getUserAddress(id_address_delivery.val() );
+	usrAddress = getUserAddress(id_address_delivery_seur.val() );
 	geocoder = new google.maps.Geocoder();
 	geocoder.geocode({ 'address': usrAddress}, function(result, status)
 	{
@@ -438,7 +457,7 @@ function updateUserMapPosition()
 			gMaps.setCenter(result[0].geometry.location);
 			userMarker.position = result[0].geometry.location;
 		}
-		else alert('updateUserMapPosition id_address: '+id_address_delivery.val()+' Error address in update the map: ' + status); // @TODO make translatable text
+		else alert('updateUserMapPosition id_address: '+id_address_delivery_seur.val()+' Error address in update the map: ' + status); // @TODO make translatable text
 	});
 }
 
@@ -547,10 +566,10 @@ function printMap() {
 
 function getSeurCollectionPoints()
 {
-	if (!(id_address_delivery.val() in seur_token_))
+	if (!(id_address_delivery_seur.val() in seur_token_))
 		var current_token = null;
 	else
-		var current_token = seur_token_[id_address_delivery.val()];
+		var current_token = seur_token_[id_address_delivery_seur.val()];
 
 	points = false;
 
@@ -558,7 +577,7 @@ function getSeurCollectionPoints()
 		url: baseDir+'modules/seur/ajax/getPickupPointsAjax.php',
 		type: 'GET',
 		data: {
-			id_address_delivery : encodeURIComponent(id_address_delivery.val()),
+			id_address_delivery : encodeURIComponent(id_address_delivery_seur.val()),
 			token : encodeURIComponent(current_token)
 		},
 		dataType: 'json',
@@ -567,7 +586,7 @@ function getSeurCollectionPoints()
 		{
 			points = data;
 		},
-		error: function(xhr, ajaxOptions, thrownError){ map.html(thrownError); }
+		error: function(xhr, ajaxOptions, thrownError){ console.error(thrownError); if (map) map.html(thrownError); }
 	});
 	return points;
 }
@@ -768,7 +787,17 @@ function selectedCarrierDiv() {
 	// Caso 1: Buscar el ancestro directo con las clases específicas
 	selectedDeliveryOption = deliveryOptionInput.closest('.row.delivery-option.js-delivery-option');
 
-	// Caso 2: Si no se encuentra, buscar una estructura alternativa
+	// Caso 2: Estructura estándar de PrestaShop
+	if (!selectedDeliveryOption.length) {
+		selectedDeliveryOption = deliveryOptionInput.closest('.row.delivery-option');
+	}
+
+	// Caso 3: Otra alternativa (One Page Checkout Prestashop by PresTeamShop)
+	if (!selectedDeliveryOption.length) {
+		selectedDeliveryOption = deliveryOptionInput.closest(`.delivery-option.delivery_option_${currentCarrierId}`);
+	}
+
+	// Caso 4: Si no se encuentra, buscar una estructura alternativa
 	if (!selectedDeliveryOption.length) {
 		selectedDeliveryOption = deliveryOptionInput.closest('.delivery-options-items');
 	}
@@ -778,9 +807,24 @@ function selectedCarrierDiv() {
 		// Buscar el contenedor donde se deben mover los elementos
 		let carrierExtraContent = selectedDeliveryOption.next('.row.carrier-extra-content.js-carrier-extra-content');
 
+		// Caso alternativo: siguiente sin js-
+		if (!carrierExtraContent.length) {
+			carrierExtraContent = selectedDeliveryOption.next('.row.carrier-extra-content');
+		}
+
 		// Caso alternativo: Buscar dentro de la nueva estructura
 		if (!carrierExtraContent.length) {
 			carrierExtraContent = selectedDeliveryOption.find('.carrier-extra-content-new');
+		}
+
+		// Caso alternativo: One Page Checkout Prestashop by PresTeamShop
+		if (!carrierExtraContent.length) {
+			carrierExtraContent = selectedDeliveryOption.find('.row.carrier-extra-content.js-carrier-extra-content');
+		}
+
+		// Caso alternativo: Si no se encuentra, buscar una estructura alternativa
+		if (!carrierExtraContent.length) {
+			carrierExtraContent = selectedDeliveryOption.find('.carrier-extra-content');
 		}
 
 		// Si se encuentra el contenedor, mover los elementos dentro de él
@@ -788,6 +832,8 @@ function selectedCarrierDiv() {
 			return carrierExtraContent;
 		}
 	}
+
+	return null;
 }
 
 function getDisplaySeurCarriers() {

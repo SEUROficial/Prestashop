@@ -25,6 +25,7 @@
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
+ini_set('default_charset', 'UTF-8');
 require_once(dirname(__FILE__).'/../../../config/config.inc.php');
 require_once(dirname(__FILE__).'/../../../init.php');
 
@@ -35,9 +36,6 @@ if (class_exists('SeurLib') == false)
 	include_once(_PS_MODULE_DIR_.'seur/classes/SeurLib.php');
 
 $context = Context::getContext();
-
-
-ini_set('default_charset', 'UTF-8');
 
 if (Tools::getValue('id_address_delivery'))
 {
@@ -57,8 +55,11 @@ if (Tools::getValue('id_address_delivery'))
         ];
 
         $token = SeurLib::getToken();
-        if (!$token)
-            return false;
+        if (!$token) {
+            http_response_code(500);
+            die('Unable to generate SEUR token');
+        }
+
 
         $headers[] = "Accept: */*";
         $headers[] = "Content-Type: application/json";
@@ -68,7 +69,7 @@ if (Tools::getValue('id_address_delivery'))
 
         if (isset($response->errors) || !(isset($response->data))) {
             SeurLib::showMessageError(null, 'GET PICKUPS Error: '.$response->errors[0]->detail, true);
-            return false;
+            die('[]');
         }
         foreach ($response->data as $centro) {
             $streetNumber = property_exists($centro, 'streetNumber')? ', '.(string)$centro->streetNumber : '';
@@ -85,12 +86,13 @@ if (Tools::getValue('id_address_delivery'))
                 'timetable' => (string)SeurLib::getTimeTable($centro->openingTime)
             );
         }
-        echo json_encode($centros);
+        die(json_encode($centros));
 	}
 	catch (PrestaShopException $e)
 	{
         $e->displayMessage();
-		return false;
+        http_response_code(500);
+        die('Unexpected error on getPickupPointsAjax.php call');
 	}
 }
 
@@ -101,7 +103,7 @@ if (Tools::getValue('usr_id_address'))
 
 	$usrAddress = new Address((int)Tools::getValue('usr_id_address'), (int)$cookie->id_lang );
 	$gMapUsrDir = $usrAddress->address1.' '.$usrAddress->postcode.','.$usrAddress->city.','.$usrAddress->country;
-	echo $gMapUsrDir;
+	die($gMapUsrDir);
 }
 
 if (Tools::getValue('savepos') && Tools::getValue('id_seur_pos'))
@@ -115,10 +117,10 @@ if (Tools::getValue('savepos') && Tools::getValue('id_seur_pos'))
 		FROM `'._DB_PREFIX_.'seur2_order_pos` 
 		WHERE `id_cart` = "'.(int)$id_cart.'"
 	');
-	
+
 	if ($result !== false)
 	{
-		echo '{"result":"'.Db::getInstance(_PS_USE_SQL_SLAVE_)->execute('
+        $response = '{"result":"'.Db::getInstance(_PS_USE_SQL_SLAVE_)->execute('
 			UPDATE `'._DB_PREFIX_.'seur2_order_pos` 
 			SET 
 				`id_seur_pos` = "'.Tools::getValue('id_seur_pos').'", 
@@ -133,7 +135,7 @@ if (Tools::getValue('savepos') && Tools::getValue('id_seur_pos'))
 	}
 	else
 	{
-		echo '{"result":"'.Db::getInstance(_PS_USE_SQL_SLAVE_)->execute('
+		$response = '{"result":"'.Db::getInstance(_PS_USE_SQL_SLAVE_)->execute('
 			INSERT INTO `'._DB_PREFIX_.'seur2_order_pos`
 				(`id_cart`, `id_seur_pos`, `company`, `address`, `city`, `postal_code`, `timetable`, `phone`) 
 			VALUES
@@ -149,4 +151,7 @@ if (Tools::getValue('savepos') && Tools::getValue('id_seur_pos'))
 				)
 		').'"}';
 	}
+    die($response);
 }
+
+die('{}');

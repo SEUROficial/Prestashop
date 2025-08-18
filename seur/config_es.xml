@@ -2,11 +2,11 @@
 <module>
     <name>seur</name>
     <displayName><![CDATA[SEUR]]></displayName>
-    <version><![CDATA[2.5.7]]></version>
-    <description><![CDATA[Gestione sus env&iacute;os con SEUR. Lider en el env&iacute;o expres nacional e internacional.]]></description>
-    <author><![CDATA[L&iacute;nea Gr&aacute;fica]]></author>
+    <version><![CDATA[2.5.21]]></version>
+    <description><![CDATA[Gestione sus env&iacute;os con SEUR. Lider en el env&iacute;o expres nacional e internacional]]></description>
+    <author><![CDATA[Seur]]></author>
     <tab><![CDATA[shipping_logistics]]></tab>
-	<confirmUninstall><![CDATA[Est&aacute; seguro que desea desinstalar el m&oacute;dulo de Seur?]]></confirmUninstall>
+	<confirmUninstall><![CDATA[¿Está seguro que desea desinatalar el módulo de Seur?]]></confirmUninstall>
     <is_configurable>1</is_configurable>
     <need_instance>0</need_instance>
 	<limited_countries></limited_countries>
