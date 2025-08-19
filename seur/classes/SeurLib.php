@@ -1185,11 +1185,6 @@ class SeurLib
         return Db::getInstance()->executeS($sql);
     }
 
-    static function getServiceType($service_code){
-        $sql = "SELECT id_seur_services_type FROM `" . _DB_PREFIX_ . "seur2_services` WHERE id_seur_services = " . $service_code;
-        return Db::getInstance()->getValue($sql);
-    }
-
     public static function getCustomerAddressId($customerId, $criteria): int
     {
         $query = new DbQuery();

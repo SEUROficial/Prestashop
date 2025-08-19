@@ -1,7 +1,7 @@
 {
     "name": "seurtransporte/seur",
     "description": "Manage your shipments with SEUR. Leader in the Express Shipping, National or International.",
-    "version": "2.5.21",
+    "version": "2.5.22",
     "type": "prestashop-module",
     "authors": [{
         "name": "Ebolution TEAM",

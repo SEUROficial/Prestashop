@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2.5.22] - 2025-08-18
+### Added
+- Add service S24
+- Add detailed COD taxes configuration to display in the order invoice 
+
 ## [2.5.21] - 2025-07-22
 ### Fixed
 - Installation error (Attempted to call an undefined method named "getIdByName")

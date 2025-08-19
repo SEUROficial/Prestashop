@@ -47,7 +47,7 @@ class Seur extends CarrierModule
     {
         $this->name = 'seur';
         $this->tab = 'shipping_logistics';
-        $this->version = '2.5.21';
+        $this->version = '2.5.22';
         $this->author = 'Seur';
         $this->need_instance = 0;
 
@@ -675,10 +675,12 @@ class Seur extends CarrierModule
         $success &= Configuration::deleteByName('SEUR2_GOOGLE_API_KEY');
 
         $success &= Configuration::deleteByName('SEUR2_SETTINGS_COD');
+        $success &= Configuration::deleteByName('SEUR2_SETTINGS_COD_DETAILED_TAXES');
         $success &= Configuration::deleteByName('SEUR2_SETTINGS_COD_FEE_PERCENT');
         $success &= Configuration::deleteByName('SEUR2_SETTINGS_COD_FEE_MIN');
         $success &= Configuration::deleteByName('SEUR2_SETTINGS_COD_MIN');
         $success &= Configuration::deleteByName('SEUR2_SETTINGS_COD_MAX');
+        $success &= Configuration::deleteByName('SEUR2_SETTINGS_COD_RATE');
         $success &= Configuration::deleteByName('SEUR2_SETTINGS_NOTIFICATION');
         $success &= Configuration::deleteByName('SEUR2_SETTINGS_NOTIFICATION_TYPE');
         $success &= Configuration::deleteByName('SEUR2_SETTINGS_ALERT');
@@ -1301,10 +1303,12 @@ class Seur extends CarrierModule
     protected function postProcessSettings()
     {
         Configuration::updateValue("SEUR2_SETTINGS_COD", Tools::getValue("SEUR2_SETTINGS_COD"));
+        Configuration::updateValue("SEUR2_SETTINGS_COD_DETAILED_TAXES", Tools::getValue("SEUR2_SETTINGS_COD_DETAILED_TAXES"));
         Configuration::updateValue("SEUR2_SETTINGS_COD_FEE_PERCENT", Tools::getValue("SEUR2_SETTINGS_COD_FEE_PERCENT"));
         Configuration::updateValue("SEUR2_SETTINGS_COD_FEE_MIN", Tools::getValue("SEUR2_SETTINGS_COD_FEE_MIN"));
         Configuration::updateValue("SEUR2_SETTINGS_COD_MIN", Tools::getValue("SEUR2_SETTINGS_COD_MIN"));
         Configuration::updateValue("SEUR2_SETTINGS_COD_MAX", Tools::getValue("SEUR2_SETTINGS_COD_MAX"));
+        Configuration::updateValue("SEUR2_SETTINGS_COD_RATE", Tools::getValue('SEUR2_SETTINGS_COD_RATE'));
         Configuration::updateValue("SEUR2_SETTINGS_NOTIFICATION", Tools::getValue("SEUR2_SETTINGS_NOTIFICATION"));
         Configuration::updateValue("SEUR2_SETTINGS_NOTIFICATION_TYPE", Tools::getValue("SEUR2_SETTINGS_NOTIFICATION_TYPE"));
         Configuration::updateValue("SEUR2_SETTINGS_ALERT", Tools::getValue("SEUR2_SETTINGS_ALERT"));
@@ -1433,11 +1437,13 @@ class Seur extends CarrierModule
             array(
                 'status_ps' => $status_ps,
                 'cashDelivery' => Configuration::get('SEUR2_SETTINGS_COD'), //$module->active
+                'cashDelivery_detailed_taxes' => Configuration::get('SEUR2_SETTINGS_COD_DETAILED_TAXES'),
                 'payments_methods' => $payments_methods,
                 'cod_fee_percent' => Configuration::get('SEUR2_SETTINGS_COD_FEE_PERCENT'),
                 'cod_fee_min' => Configuration::get('SEUR2_SETTINGS_COD_FEE_MIN'),
                 'cod_min' => Configuration::get('SEUR2_SETTINGS_COD_MIN'),
                 'cod_max' => Configuration::get('SEUR2_SETTINGS_COD_MAX'),
+                'cod_rate' => Configuration::get('SEUR2_SETTINGS_COD_RATE') ? Configuration::get('SEUR2_SETTINGS_COD_RATE') : 21,
                 'notification' => Configuration::get('SEUR2_SETTINGS_NOTIFICATION'),
                 'notification_type' => Configuration::get('SEUR2_SETTINGS_NOTIFICATION_TYPE'),
                 'alerts' => Configuration::get('SEUR2_SETTINGS_ALERT'),
@@ -1794,10 +1800,10 @@ class Seur extends CarrierModule
                 $this->context->smarty->assign('send_to_digital_docu', (!$seur_order['brexit'] || !$seur_order['tariff']) && $order->hasInvoice() && !SeurLib::isEuropeanShipping($seur_order['id_seur_order']));
                 $this->context->smarty->assign('send_digital_docu', Context::getContext()->link->getAdminLink('AdminSeurShipping')."&action=send_dd&id_seur_order=".$seur_order['id_seur_order']."&id_order=".$seur_order['id_order']);
 
-                $serviceTypes = SeurLib::getServicesTypes();
-                $shipping_type = SeurLib::getServiceType($service_code);
+                $seur_carrier = new SeurCarrier($seur_order['id_seur_carrier']);
+                $shipping_type = $seur_carrier->shipping_type;
 
-                $this->context->smarty->assign('services_types', $serviceTypes);
+                $this->context->smarty->assign('services_types', SeurLib::getServicesTypes());
                 $this->context->smarty->assign('products', []);
                 $this->context->smarty->assign('services', []);
 

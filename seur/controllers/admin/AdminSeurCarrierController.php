@@ -243,36 +243,6 @@ class AdminSeurCarrierController extends ModuleAdminController
             'active' => $active,
         ));
 
-
-        /*
-        $sql ="
-            UPDATE `"._DB_PREFIX_."lgpampling_product` pp
-            LEFT JOIN (SELECT o.id_product, @curRow := @curRow + 1 AS orden_final
-                        FROM `ps_lgpampling_product` o
-                    JOIN (SELECT @curRow := 0) r
-                    LEFT JOIN `"._DB_PREFIX_."product` p ON p.id_product = o.id_product
-                    WHERE p.id_product = o.id_product AND active=1
-                    ORDER BY orden) o ON pp.id_product = o.id_product
-            set
-                pp.orden = o.orden_final";
-
-        Db::getInstance(_PS_USE_SQL_SLAVE_)->execute($sql);
-
-
-        $sql = "SELECT p.id_product, id_tipo, l.name, l.link_rewrite, pp.orden, i.id_image FROM `"._DB_PREFIX_."product` p
-                LEFT JOIN `"._DB_PREFIX_."product_lang` l ON (p.`id_product` = l.`id_product` AND l.id_lang=".(int)$this->context->language->id.")
-                LEFT JOIN `"._DB_PREFIX_."product_shop` s ON (p.`id_product` = s.`id_product`)
-                LEFT JOIN `"._DB_PREFIX_."lgpampling_product` pp ON (p.`id_product` = pp.`id_product`)
-                LEFT JOIN `"._DB_PREFIX_."image` i ON (p.`id_product` = i.`id_product` AND i.cover=1)
-                WHERE s.active=1 AND s.visibility != 'none'
-                ORDER BY pp.orden DESC";
-
-        $products =  Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
-
-        $this->context->smarty->assign('products', $products);
-*/
-//        parent::initContent();
-
         return $this->context->smarty->fetch(dirname(dirname(__DIR__)) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'admin' . DIRECTORY_SEPARATOR . 'carrier.tpl');
 
     }

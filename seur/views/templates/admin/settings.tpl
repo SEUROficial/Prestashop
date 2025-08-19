@@ -78,7 +78,26 @@
                     <br>
                     <div class="note_seur">{l s="Introduzca un procentaje para cargar a los clientes como recargo y / o un importe mínimo en caso de no llegar al importe del porcentaje." mod='seur'}</div>
                 </div>
-
+            </div>
+            <div class="col-xs-12 col-md-12 col-lg-12">
+                <div class="label_seur">{l s='Show COD detailed taxes' mod='seur'}</div>
+                <div class="input_seur">
+                <span class="switch prestashop-switch fixed-width-lg">
+                        <input type="radio" name="SEUR2_SETTINGS_COD_DETAILED_TAXES" id="cashDelivery_detailed_taxes_on" value="1"
+                               {if $cashDelivery_detailed_taxes}checked="checked"{/if}>
+                        <label for="cashDelivery_detailed_taxes_on" class="radioCheck">{l s="Yes" mod="seur"}</label>
+                        <input type="radio" name="SEUR2_SETTINGS_COD_DETAILED_TAXES" id="cashDelivery_detailed_taxes_off" value="0"
+                               {if !$cashDelivery_detailed_taxes}checked="checked"{/if}>
+                        <label for="cashDelivery_detailed_taxes_off" class="radioCheck">{l s="No" mod="seur"}</label>
+                        <a class="slide-button btn"></a>
+                </span>
+                </div>
+            </div>
+            <div class="col-xs-12 col-md-12 col-lg-6 row">
+                <div class="col-xs-12 col-md-6 col-lg-3">
+                    <div class="label_seur">{l s='COD Rate' mod='seur'}</div>
+                    <div class="input_seur_mini"><input name="SEUR2_SETTINGS_COD_RATE" value="{$cod_rate}"> %</div>
+                </div>
             </div>
         </div>
 

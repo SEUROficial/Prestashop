@@ -321,8 +321,19 @@ class SeurCashOnDelivery extends PaymentModule{
         $sql = "SELECT `id_cart`, `module` FROM `"._DB_PREFIX_."orders` WHERE `id_order` = ".(int)$params['object']->id_order;
         $modulo=Db::getInstance()->executeS($sql);
         if (strcmp($modulo[0]['module'], "seurcashondelivery")==0){
-            $this->smarty->assign('reembolso_cargo', number_format($this->getCargo(new Order((int)$params['object']->id_order)) , 2, '.', ''));
-            $this->smarty->assign('printed', number_format($this->getCargo(new Order((int)$params['object']->id_order)) , 2, '.', ''));
+            $reembolso_rate = Configuration::get('SEUR2_SETTINGS_COD_RATE') ?? 21;
+            $cargo_tax_incl = $this->getCargo(new Order((int)$params['object']->id_order));
+            $cargo_tax = $cargo_tax_incl * $reembolso_rate/100;
+            $cargo_tex_excl = $cargo_tax_incl - $cargo_tax;
+
+            $this->smarty->assign('currency', Context::getContext()->currency);
+            $this->smarty->assign('reembolso_rate', $reembolso_rate, 2, '.', '');
+            $this->smarty->assign('reembolso_cargo_tax', number_format($cargo_tax, 2, '.', ''));
+            $this->smarty->assign('reembolso_cargo_tax_excl', number_format($cargo_tex_excl , 2, '.', ''));
+            $this->smarty->assign('reembolso_show_detailed_taxes', Configuration::get('SEUR2_SETTINGS_COD_DETAILED_TAXES'));
+
+            $this->smarty->assign('reembolso_cargo', number_format($cargo_tax_incl , 2, '.', ''));
+            $this->smarty->assign('printed', number_format($cargo_tax_incl , 2, '.', ''));
             if (version_compare(_PS_VERSION_, '1.5', '<'))
                 return $this->display($this->path, 'views/templates/hook/pdf.tpl');
             else
