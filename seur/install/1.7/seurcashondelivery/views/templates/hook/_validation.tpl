@@ -50,11 +50,11 @@
             {l s='You have chosen the cash on delivery method by SEUR.' mod='seurcashondelivery'}
                 <br/><br />
             {l s='The total of your order is:' mod='seurcashondelivery'}
-                <span id="amount_coste" class="price">{Tools::displayPrice($coste)}</span><br /><br />
+                <span id="amount_coste" class="price">{$coste}</span><br /><br />
             {l s='The total fee is:' mod='seurcashondelivery'}
-                <span id="amount_cargo" class="price">{Tools::displayPrice($cart_Amount)}</span><br /><br />
+                <span id="amount_cargo" class="price">{$cart_Amount}</span><br /><br />
             {l s='The total amount is:' mod='seurcashondelivery'}
-                <span id="amount_total" class="price">{Tools::displayPrice($total)}</span>
+                <span id="amount_total" class="price">{$total}</span>
         </p>
         <p>
                 <br /><br />

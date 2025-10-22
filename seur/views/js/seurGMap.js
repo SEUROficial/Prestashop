@@ -14,6 +14,7 @@ let listPoints;
 let carrierTable;
 let carrierTableInput;
 let carrierTableInputContainer;
+let carrierExtraContentDiv;
 
 let currentCarrierId;
 let map;
@@ -29,6 +30,20 @@ let id_seur_RESTO_array;
 
 $(document).ready(function()
 {
+	const form = document.getElementById('js-delivery');
+	const pos_selected = document.getElementById('pos_selected');
+	form.addEventListener('submit', (e) => {
+		if (pos_selected.value == 'false' && currentCarrierIsSeurPickup()) {
+			e.preventDefault();
+			alert('Selecciona punto de recogida.');
+			if (carrierExtraContentDiv.length) {
+				carrierExtraContentDiv.closest('.carrier-extra-content').show();
+			}
+			return;
+		}
+		e.target.submit();
+	});
+
 	const body = $('body');
 	const delivery_id = $('#delivery_id');
 	body.on('change',
@@ -55,6 +70,7 @@ $(document).ready(function()
 });
 
 async function initSeurCarriers() {
+	setButtonProcessCarrier('enabled');
 	if (!seurInitialized) {
 		seurAssignGlobalVariables();
 	}
@@ -183,17 +199,6 @@ function initSeurPointList() {
 }
 
 function initContainers() {
-	map = $('<div />').addClass('seurMapContainer').html(map);
-	$('span', map).css({ 'line-height' : '64px', 'font-size' : '50px' });
-
-	carrierExtraContentDiv = selectedCarrierDiv();
-	map.appendTo(carrierExtraContentDiv);
-	noSelectedPointInfo.insertAfter(map);
-	collectionPointInfo.insertAfter(map);
-	seurPudoContainer.insertAfter(map);
-}
-
-function initContainers() {
 	map = $('<div />').attr('id', 'seurMap').attr('init', 'false');
 	map = $('<div />').addClass('seurMapContainer').html(map);
 	$('span', map).css({ 'line-height' : '64px', 'font-size' : '50px' });
@@ -278,7 +283,7 @@ function saveCollectorPoint(id_cart, postCodeData )
 		var current_token = seur_token_[chosen_address_delivery];
 
 	$.ajax({
-		url: baseDir+'modules/seur/ajax/getPickupPointsAjax.php',
+		url: window.seur_pickups_url,
 		type: 'GET',
 		data: {
 			savepos : true,
@@ -510,17 +515,17 @@ function getUserAddress(idAddress)
 
 	address = "";
 	$.ajax({
-		url: baseDir+'modules/seur/ajax/getPickupPointsAjax.php',
+		url: window.seur_pickups_url,
 		type: 'GET',
 		data: {
 			usr_id_address : encodeURIComponent(idAddress),
 			token : encodeURIComponent(current_token)
 		},
-		dataType: 'html',
+		dataType: 'json',
 		async: false,
 		success: function(addr)
 		{
-			address = addr;
+			address = addr.result;
 		},
 		error: function(xhr, ajaxOptions, thrownError)
 		{
@@ -574,7 +579,7 @@ function getSeurCollectionPoints()
 	points = false;
 
 	$.ajax({
-		url: baseDir+'modules/seur/ajax/getPickupPointsAjax.php',
+		url: window.seur_pickups_url,
 		type: 'GET',
 		data: {
 			id_address_delivery : encodeURIComponent(id_address_delivery_seur.val()),
@@ -739,7 +744,8 @@ function clearMarkers() {
 function cleanSeurMaps()
 {
 	$('div.seurMapContainer').remove();
-	seurPudoContainer.hide()
+	seurPudoContainer.hide();
+	seurPudoContainer.html('');
 	noSelectedPointInfo.hide();
 	collectionPointInfo.hide();
 	listPoints.remove();
@@ -780,60 +786,8 @@ function currentCarrierIsSeurPickup() {
 }
 
 function selectedCarrierDiv() {
-	// Localizar el elemento seleccionado
-	const deliveryOptionInput = $(`#delivery_option_${currentCarrierId}`);
-	let selectedDeliveryOption;
-
-	// Caso 1: Buscar el ancestro directo con las clases específicas
-	selectedDeliveryOption = deliveryOptionInput.closest('.row.delivery-option.js-delivery-option');
-
-	// Caso 2: Estructura estándar de PrestaShop
-	if (!selectedDeliveryOption.length) {
-		selectedDeliveryOption = deliveryOptionInput.closest('.row.delivery-option');
-	}
-
-	// Caso 3: Otra alternativa (One Page Checkout Prestashop by PresTeamShop)
-	if (!selectedDeliveryOption.length) {
-		selectedDeliveryOption = deliveryOptionInput.closest(`.delivery-option.delivery_option_${currentCarrierId}`);
-	}
-
-	// Caso 4: Si no se encuentra, buscar una estructura alternativa
-	if (!selectedDeliveryOption.length) {
-		selectedDeliveryOption = deliveryOptionInput.closest('.delivery-options-items');
-	}
-
-	// Verificar que exista
-	if (selectedDeliveryOption.length) {
-		// Buscar el contenedor donde se deben mover los elementos
-		let carrierExtraContent = selectedDeliveryOption.next('.row.carrier-extra-content.js-carrier-extra-content');
-
-		// Caso alternativo: siguiente sin js-
-		if (!carrierExtraContent.length) {
-			carrierExtraContent = selectedDeliveryOption.next('.row.carrier-extra-content');
-		}
-
-		// Caso alternativo: Buscar dentro de la nueva estructura
-		if (!carrierExtraContent.length) {
-			carrierExtraContent = selectedDeliveryOption.find('.carrier-extra-content-new');
-		}
-
-		// Caso alternativo: One Page Checkout Prestashop by PresTeamShop
-		if (!carrierExtraContent.length) {
-			carrierExtraContent = selectedDeliveryOption.find('.row.carrier-extra-content.js-carrier-extra-content');
-		}
-
-		// Caso alternativo: Si no se encuentra, buscar una estructura alternativa
-		if (!carrierExtraContent.length) {
-			carrierExtraContent = selectedDeliveryOption.find('.carrier-extra-content');
-		}
-
-		// Si se encuentra el contenedor, mover los elementos dentro de él
-		if (carrierExtraContent.length) {
-			return carrierExtraContent;
-		}
-	}
-
-	return null;
+	carrierExtraContent = $('#seur_carrier_extra_info');
+	return carrierExtraContent;
 }
 
 function getDisplaySeurCarriers() {

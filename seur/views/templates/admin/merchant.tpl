@@ -197,18 +197,6 @@
                 </div>
             </div>
             <div class="col-xs-6 col-lg-3">
-                <div class="label_seur">{l s='Activar GEOLABEL' mod='seur'}</div>
-                <div class="input_seur">
-                <span class="switch prestashop-switch fixed-width-lg">
-                        <input type="radio" name="geolabel" id="cashGeolabel_on" value="1"
-                               {if $geolabel == 1}checked="checked"{/if}>
-                        <label for="cashGeolabel_on" class="radioCheck">{l s="Yes" mod="seur"}</label>
-                        <input type="radio" name="geolabel" id="cashGeolabel_off" value="0"
-                               {if $geolabel == 0}checked="checked"{/if}>
-                        <label for="cashGeolabel_off" class="radioCheck">{l s="No" mod="seur"}</label>
-                        <a class="slide-button btn"></a>
-                </span>
-                </div>
             </div>
             <div class="xs-hidden md-hidden col-lg-12 sin-padding">
             </div>

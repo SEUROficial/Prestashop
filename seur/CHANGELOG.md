@@ -1,6 +1,27 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2.5.24] - 2025-10-22
+### Added
+- PS9 compatibility
+
+## Changed
+- Config options cleanup 
+
+## [2.5.23] - 2025-09-23
+### Added
+- Get new token only when expirated
+- Add carrier extra content
+- Add previous checkout submit validation for shipping method
+
+## Changed
+- Update shipments refactor
+- Remove unused getExpedition calls
+
+## Fixed
+- Fix label comments special chars
+- Fix COD display price at pdf 
+
 ## [2.5.22] - 2025-08-18
 ### Added
 - Add service S24

@@ -101,61 +101,6 @@
             </div>
         </div>
 
-        <div class="title_seur col-xs-12">{l s="Notifications and Alerts" mod='seur'}</div>
-        <div class="box_seur col_xs_12 row">
-            <div class="subtitle_seur col-xs-12">{l s="Notifications" mod='seur'}</div>
-            <div class="col-xs-12 col-md-6 col-lg-6">
-                <div class="radio_seur">
-                    <span class="switch prestashop-switch fixed-width-lg">
-                            <input type="radio" name="SEUR2_SETTINGS_NOTIFICATION" id="notification_on" value="1"
-                                   {if $notification}checked="checked"{/if}>
-                            <label for="notification_on" class="radioCheck">{l s="Yes" mod="seur"}</label>
-                            <input type="radio" name="SEUR2_SETTINGS_NOTIFICATION" id="notification_off" value="0"
-                                   {if !$notification}checked="checked"{/if}>
-                            <label for="notification_off" class="radioCheck">{l s="No" mod="seur"}</label>
-                            <a class="slide-button btn"></a>
-                    </span>
-                </div>
-                <div class="radio_seur">
-                    <input type="radio" name="SEUR2_SETTINGS_NOTIFICATION_TYPE" value="1"
-                           {if $notification_type==1 }checked{/if}> {l s='Email' mod='seur'}
-                    <input type="radio" name="SEUR2_SETTINGS_NOTIFICATION_TYPE" value="2"
-                           {if $notification_type==2 }checked{/if}> {l s='SMS' mod='seur'}
-                    <input type="radio" name="SEUR2_SETTINGS_NOTIFICATION_TYPE" value="3"
-                           {if $notification_type==3 }checked{/if}> {l s='Email & SMS' mod='seur'}
-                </div>
-                <div class="col-xs-12">
-                    <div class="note_seur">{l s="Seur le notificará cuando se realice el envío. Para usar esta funcionalidad debe contratarla previamente." mod='seur'}</div>
-                </div>
-            </div>
-
-            <div class="subtitle_seur col-xs-12">{l s="Alerts" mod='seur'}</div>
-            <div class="col-xs-12 col-md-6 col-lg-6">
-                <div class="radio_seur">
-                    <span class="switch prestashop-switch fixed-width-lg">
-                            <input type="radio" name="SEUR2_SETTINGS_ALERT" id="alerts_on" value="1"
-                                   {if $alerts}checked="checked"{/if}>
-                            <label for="alerts_on" class="radioCheck">{l s="Yes" mod="seur"}</label>
-                            <input type="radio" name="SEUR2_SETTINGS_ALERT" id="alerts_off" value="0"
-                                   {if !$alerts}checked="checked"{/if}>
-                            <label for="alerts_off" class="radioCheck">{l s="No" mod="seur"}</label>
-                            <a class="slide-button btn"></a>
-                    </span>
-                </div>
-                <div class="radio_seur">
-                    <input type="radio" name="SEUR2_SETTINGS_ALERT_TYPE" value="1"
-                           {if $alerts_type==1 }checked{/if}> {l s='Email' mod='seur'}
-                    <input type="radio" name="SEUR2_SETTINGS_ALERT_TYPE" value="2"
-                           {if $alerts_type==2 }checked{/if}> {l s='SMS' mod='seur'}
-                    <input type="radio" name="SEUR2_SETTINGS_ALERT_TYPE" value="3"
-                           {if $alerts_type==3 }checked{/if}> {l s='Email & SMS' mod='seur'}
-                </div>
-                <div class="col-xs-12">
-                    <div class="note_seur">{l s="Seur le informará cuando el paquete esté enviado. Para usar esta funcionalidad debe contratarla previamente." mod='seur'}</div>
-                </div>
-            </div>
-        </div>
-
         <div class="title_seur col-xs-12">{l s="Print" mod='seur'}</div>
         <div class="box_seur col_xs_12 row">
             <div class="col-xs-12 col-md-12 col-lg-12">
@@ -332,12 +277,20 @@
             <div class="alert alert-info">
                 {l s='You can set up a scheduled task to refresh the status of your shipments using the following URL:' mod='seur'}
                 <br><br>
+                {if $ps_version < 9 }
                 <strong>{$module_url}modules/seur/scripts/UpdateShipments.php?secret={$module_secret}</strong>
+                {else}
+                <strong>{$module_url}module/seur/updateshipments?secret={$module_secret}</strong>
+                {/if}
             </div>
             <div class="alert alert-info">
                 {l s='Alternatively, if you have access to the system console, you can create a CRON job like:' mod='seur'}
                 <br><br>
+                {if $ps_version < 9 }
                 <strong><code>* * * * * curl -s {$module_url}modules/seur/scripts/UpdateShipments.php?secret={$module_secret}</code></strong>
+                {else}
+                <strong><code>* * * * * curl -s {$module_url}module/seur/updateshipments?secret={$module_secret}</code></strong>
+                {/if}
             </div>
         </div>
     <div class='clearfix'>

@@ -71,32 +71,30 @@ class UpdateShipmentsStatus implements CommandHandler
 
     private function processSingleShipment(array $shipment)
     {
-        $failed = false;
-
         /* Consultar estado */
         $response = $this->getShipmentStatus($shipment);
-        if (empty($response->data)) {
+        if ($response === false || empty($response->data)) {
             $this->error_messages .= ' # '.$shipment['id_order'].' - no response data';
-            $failed = true;
+            $this->updateShipmentStatus($shipment, [], [], true);
+            return;
         }
 
         $shipment_status = $this->parseShipmentStatusResponse($response);
-        if ( false === $shipment_status ) {
-            $this->error_messages .= ' # '.$shipment['id_order'].' - no 4 matches';
-            $failed = true;
+        if ($shipment_status === false) {
+            $this->error_messages .= ' # ' . $shipment['id_order'] . ' - no 4 matches';
+            $this->updateShipmentStatus($shipment, [], [], true);
+            return;
         }
 
         $expedition_status = SeurOrder::getStatusExpedition($shipment_status['tipo_situ'], (int)$shipment_status['cod_situ']);
-        if (!isset($expedition_status['id_status'])) {
+        if ($expedition_status === false || !isset($expedition_status['id_status'])) {
             //echo "Error al actualizar estado pedido ".$shipment['id_order']."<br/>";
-            $this->error_messages .= ' # '.$shipment['id_order'].' - id_status vacío. tipo_situ: '.$shipment_status['tipo_situ']. ' - cod_situ: '.$shipment_status['cod_situ'] ;
-            $failed = true;
-        }
-
-        $this->updateShipmentStatus($shipment, $shipment_status, $expedition_status, $failed);
-        if ($failed) {
+            $this->error_messages .= ' # ' . $shipment['id_order'] . ' - id_status vacío. tipo_situ: ' . $shipment_status['tipo_situ'] . ' - cod_situ: ' . $shipment_status['cod_situ'];
+            $this->updateShipmentStatus($shipment, [], [], true);
             return;
         }
+
+        $this->updateShipmentStatus($shipment, $shipment_status, $expedition_status, false);
     }
 
     private function getShipmentStatus(array $shipment)
@@ -112,7 +110,7 @@ class UpdateShipmentsStatus implements CommandHandler
         return $response;
     }
 
-    private function parseShipmentStatusResponse(\stdClass $state)
+    private function parseShipmentStatusResponse($state)
     {
         $expedicion = $state->data[0];
         $cod_situacion = $expedicion->eventCode;

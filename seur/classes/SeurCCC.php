@@ -52,16 +52,7 @@ class SeurCCC extends ObjectModel
     public $e_devoluciones;
     public $url_devoluciones;
     public $is_default;
-    public $geolabel;
     public $id_shop;
-
-    /*    public $click_connect;
-    public $click_connect_ccc;
-    public $click_connect_franchise;
-    public $shop_name;
-    public $latitude;
-    public $longitude;
-*/
 
     /**
      * @see ObjectModel::$definition
@@ -91,7 +82,6 @@ class SeurCCC extends ObjectModel
             'e_devoluciones' =>     array('type' => self::TYPE_INT, 'validate' => 'isBool'),
             'url_devoluciones' =>   array('type' => self::TYPE_STRING, 'size' => 255),
             'is_default' =>         array('type' => self::TYPE_BOOL),
-            'geolabel' =>           array('type' => self::TYPE_BOOL),
             'id_shop' =>            array('type' => self::TYPE_INT),
         ),
     );

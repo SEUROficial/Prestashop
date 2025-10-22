@@ -79,13 +79,9 @@ function upgrade_module_2_0_0($module)
 
     $seurInternacional = $configuration['international_orders'];
     $seurPos = $configuration['pos'];
-    $seurAviso = $configuration['notification_advice_radio'];
-    $seurDistribucion = $configuration['notification_distribution_radio'];
     $seurPrintType = $configuration['print_type'];
     $seurTarifa = $configuration['tarifa'];
     $seurPuntosVenta = $configuration['pickup']+1;
-    $seurAvisoCheck = $configuration['advice_checkbox'];
-    $seurDistribucionCheck = $configuration['distribution_checkbox'];
 
 
     $sql = "SELECT * FROM `"._DB_PREFIX_."seur_merchant`";
@@ -144,10 +140,6 @@ function upgrade_module_2_0_0($module)
     Configuration::updateValue("SEUR2_SETTINGS_COD_FEE_MIN", $seurCodMin);
     Configuration::updateValue("SEUR2_SETTINGS_COD_MIN", 0);
     Configuration::updateValue("SEUR2_SETTINGS_COD_MAX", 0);
-    Configuration::updateValue("SEUR2_SETTINGS_NOTIFICATION", $seurDistribucionCheck);
-    Configuration::updateValue("SEUR2_SETTINGS_NOTIFICATION_TYPE", $seurDistribucion);
-    Configuration::updateValue("SEUR2_SETTINGS_ALERT", $seurAvisoCheck);
-    Configuration::updateValue("SEUR2_SETTINGS_ALERT_TYPE", $seurAviso);
     Configuration::updateValue("SEUR2_SETTINGS_PRINT_TYPE", $seurPrintType);
     Configuration::updateValue("SEUR2_SETTINGS_PICKUP", $seurPuntosVenta);
     Configuration::updateValue("SEUR2_GOOGLE_API_KEY", "");

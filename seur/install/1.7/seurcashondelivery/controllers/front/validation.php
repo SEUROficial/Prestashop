@@ -46,14 +46,18 @@ class SeurCashOnDeliveryValidationModuleFrontController extends ModuleFrontContr
 
             $total = $coste + $cart_Amount;
 
+            // Moneda actual
+            $currency = $this->context->currency; // objeto Currency
+            $iso = $currency ? $currency->iso_code : null;
+
             $page = $this->getTemplateVarPage();
             $page['page_name'] = 'checkout'; // We want to use exact checkout css.
 
             $this->context->smarty->assign(array(
-                'coste' => $coste,
-                'cart_Amount' => $cart_Amount,
+                'coste' => $this->context->getCurrentLocale()->formatPrice($coste, $iso),
+                'cart_Amount' => $this->context->getCurrentLocale()->formatPrice($cart_Amount, $iso),
                 'nbProducts' => $cart->nbProducts(),
-                'total' => $total,
+                'total' => $this->context->getCurrentLocale()->formatPrice($total, $iso),
                 'this_path' => $this->module->getPathUri(),
                 'this_path_ssl' => Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . 'modules/' . $this->module->name . '/',
                 'page' => $page,

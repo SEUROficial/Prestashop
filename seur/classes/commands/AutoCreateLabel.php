@@ -207,10 +207,7 @@ class AutoCreateLabel implements CommandHandler
                 }
             }
 
-            $is_international = SeurLib::isInternationalShipping($iso_country);
-            $is_geolabel = SeurLib::isGeoLabel($id_seur_ccc);
-
-            $label_file = SeurLabel::createLabels((int)$order->id, $label_data, $merchant_data, $is_geolabel, $is_international, true);
+            $label_file = SeurLabel::createLabels((int)$order->id, $label_data, $merchant_data, true);
 
             if ($label_file === false) {
                 echo "<br>Could not set printed value for this order '. $order->reference<br>";

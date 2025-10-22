@@ -38,10 +38,10 @@
         <td style="background-color: #dddddd;">{l s='Cash on delivery by SEUR' mod='seurcashondelivery'}</td>
         {if $reembolso_show_detailed_taxes}
             <td style="background-color: #dddddd;">{$reembolso_rate|escape:'htmlall':'UTF-8'}%</td>
-            <td style="background-color: #dddddd;">{displayWtPriceWithCurrency price=$reembolso_cargo_tax currency=$currency}</td>
-            <td style="background-color: #dddddd;">{displayWtPriceWithCurrency price=$reembolso_cargo_tax_excl currency=$currency}</td>
+            <td style="background-color: #dddddd;">{$currency->prefix} {$reembolso_cargo_tax} {$currency->suffix}</td>
+            <td style="background-color: #dddddd;">{$currency->prefix} {$reembolso_cargo_tax_excl} {$currency->suffix}</td>
         {/if}
-        <td style="background-color: #dddddd;">{displayWtPriceWithCurrency price=$reembolso_cargo currency=$currency}<sup>*</sup></td>
+        <td style="background-color: #dddddd;">{$currency->prefix} {$reembolso_cargo} {$currency->suffix}<sup>*</sup></td>
     </tr>
     <br />
     <tr>

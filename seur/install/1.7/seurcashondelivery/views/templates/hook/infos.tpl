@@ -9,8 +9,8 @@
 <img src="../modules/seurcashondelivery/img/logoSeur.png" style="float:left; margin-right:15px;">
 <p><strong>{l s='This module allows you to accept secure payments by Seur cash on delivery.' mod='seurcashondelivery'}</strong></p>
     {l s='Cash on delivery by SEUR' mod='seurcashondelivery'}:<br>
-    {l s='Cost:' mod='seurcashondelivery'} {Tools::displayPrice($coste)}<br>
-    {l s='Fee:' mod='seurcashondelivery'} {Tools::displayPrice($cart_Amount)}<br>
-    <strong>{l s='Total:' mod='seurcashondelivery'} {Tools::displayPrice($total)}</strong>
+    {l s='Cost:' mod='seurcashondelivery'} {$coste}<br>
+    {l s='Fee:' mod='seurcashondelivery'} {$cart_Amount}<br>
+    <strong>{l s='Total:' mod='seurcashondelivery'} {$total}</strong>
 
 </div>

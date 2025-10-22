@@ -68,7 +68,7 @@ class SeurLabel
 
     }
 
-    public static function createLabels($id_order, $label_data, $merchant_data, $is_geolabel, $is_international, $auto_create_label = false)
+    public static function createLabels($id_order, $label_data, $merchant_data, $auto_create_label = false)
     {
         try {
             $seur_order = SeurOrder::getByOrder($id_order);
@@ -166,9 +166,6 @@ class SeurLabel
         }
 
         $preparedData['name'] = $name;
-        $preparedData['notification'] = (Configuration::get('SEUR2_SETTINGS_NOTIFICATION')==1 ? Configuration::get('SEUR2_SETTINGS_NOTIFICATION_TYPE'):0);
-        $preparedData['advice_checkbox'] = Configuration::get('SEUR2_SETTINGS_ALERT');
-        $preparedData['distribution_checkbox'] = Configuration::get('SEUR2_SETTINGS_ALERT_TYPE');
         $preparedData['servicio'] = $servicio;
         $preparedData['producto'] = $producto;
         $preparedData['mercancia'] = $mercancia;
@@ -253,6 +250,7 @@ class SeurLabel
             $comments[] = 'ENTREGA: ' . SeurLib::getDeliveryDate();
             $comments[] = 'TIPO: ' . SeurLib::getShipmentType($id_order);
         } else {
+            $label_data['info_adicional'] = SeurLib::removeAccents($label_data['info_adicional']);
             $comments[] = $label_data['info_adicional']. (Configuration::get('SEUR2_PRODS_REFS_IN_COMMENTS')? SeurLabel::getProductsRefs($id_order) : "");
         }
         $data['comments'] = substr(implode('; ', $comments), 0, self::SHIPMENT_COMMENT_LENGTH);

@@ -159,7 +159,7 @@ class SeurPickup
         return self::getLastPickup($id_seur_ccc, $frio);
     }
 
-    function getPickup($id_pickup) {
+    static function getPickup($id_pickup) {
         $pickup_data = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow('
 			SELECT *
 			FROM `'._DB_PREFIX_.'seur2_pickup`   

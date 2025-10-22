@@ -11,8 +11,6 @@
 
 use PrestaShop\PrestaShop\Core\Payment\PaymentOption;
 
-if (!defined('_CAN_LOAD_FILES_')) exit;
-
 if (!defined('_PS_VERSION_')) exit;
 
 if (!class_exists('SeurLib')) include_once(_PS_MODULE_DIR_.'seur/classes/SeurLib.php');
@@ -132,13 +130,17 @@ class SeurCashOnDelivery extends PaymentModule{
         $vales = (float)(abs($cart->getOrderTotal(true, Cart::ONLY_DISCOUNTS)));
         $total_con_cargo = $coste + $cart_Amount;
 
+        // Moneda actual
+        $currency = $this->context->currency; // objeto Currency
+        $iso = $currency ? $currency->iso_code : null;
+
         $this->context->smarty->assign(array(
             'nbProducts' => $cart->nbProducts(),
             'cust_currency' => (int)$cart->id_currency,
             'currencies' => $this->getCurrency((int)$cart->id_currency),
-            'coste' => $coste,
-            'cart_Amount' => $cart_Amount,
-            'total' => $total_con_cargo,
+            'coste' => $this->context->getCurrentLocale()->formatPrice($coste, $iso),
+            'cart_Amount' => $this->context->getCurrentLocale()->formatPrice($cart_Amount, $iso),
+            'total' => $this->context->getCurrentLocale()->formatPrice($total_con_cargo, $iso),
             'this_path' => $this->_path,
             'this_path_ssl' => Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/'.$this->name.'/'
         ));
@@ -212,11 +214,15 @@ class SeurCashOnDelivery extends PaymentModule{
             $cargo = number_format($this->calculateCartAmount($params['cart']), 2, '.', '');
             $total_con_cargo = (float)($cost + $cargo);
 
+            // Moneda actual
+            $currency = $this->context->currency; // objeto Currency
+            $iso = $currency ? $currency->iso_code : null;
+
             $this->context->smarty->assign(array(
                 'ruta' => $this->_path,
-                'coste' => $cost,
-                'cart_Amount' => $cargo,
-                'total' => $total_con_cargo,
+                'coste' => $this->context->getCurrentLocale()->formatPrice($cost, $iso),
+                'cart_Amount' => $this->context->getCurrentLocale()->formatPrice($cargo, $iso),
+                'total' => $this->context->getCurrentLocale()->formatPrice($total_con_cargo, $iso),
                 'this_path_ssl' => Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . 'modules/' . $this->name . '/',
                 'enlace' => $this->context->link->getModuleLink('seurcashondelivery', 'validation', array(), true),
                 'visible' => 1
@@ -321,7 +327,7 @@ class SeurCashOnDelivery extends PaymentModule{
         $sql = "SELECT `id_cart`, `module` FROM `"._DB_PREFIX_."orders` WHERE `id_order` = ".(int)$params['object']->id_order;
         $modulo=Db::getInstance()->executeS($sql);
         if (strcmp($modulo[0]['module'], "seurcashondelivery")==0){
-            $reembolso_rate = Configuration::get('SEUR2_SETTINGS_COD_RATE') ?? 21;
+            $reembolso_rate = Configuration::get('SEUR2_SETTINGS_COD_RATE');
             $cargo_tax_incl = $this->getCargo(new Order((int)$params['object']->id_order));
             $cargo_tax = $cargo_tax_incl * $reembolso_rate/100;
             $cargo_tex_excl = $cargo_tax_incl - $cargo_tax;
@@ -352,14 +358,16 @@ class SeurCashOnDelivery extends PaymentModule{
         $modulo = Db::getInstance()->executeS($sql);
         $modulo_name=$modulo[0]['module'];
 
-        $reembolso_cargo = $this->getCargo($params['order']) ;
-        $order_currency = new Currency((int)$params['order']->id_currency);
-        $reembolso_cargo = Tools::convertPrice($reembolso_cargo, $order_currency);
+        $reembolso_cargo = (float)$this->getCargo($params['order']) ;
+        $currency = new Currency((int)$params['order']->id_currency);
+
+        $iso = $currency ? $currency->iso_code : null;
 
         $this->smarty->assign(array(
-            'reembolso_cargo' => (float)$reembolso_cargo,
+            'reembolso_cargo' => $this->context->getCurrentLocale()->formatPrice($reembolso_cargo, $iso),
             'modulo' => $modulo_name
         ));
+        $this->smarty->assign('currency', Context::getContext()->currency);
         if (version_compare(_PS_VERSION_, '1.5', '<'))
             return($this->display($this->path, 'views/templates/hook/detallecomprareembolso.tpl'));
         else
@@ -391,12 +399,18 @@ class SeurCashOnDelivery extends PaymentModule{
             $total_paid = (float)$this->getTotalPaid($order);
         }
         // print_r($order);
+        // Moneda actual
+        $currency = $this->context->currency; // objeto Currency
+        $iso = $currency ? $currency->iso_code : null;
+
+        $cargo = (float)$this->getCargo($order);
         $this->smarty->assign(array(
-            'reembolso_cargo' => (float)$this->getCargo($order),
-            'total_paid_seurcashondelivery' => $total_paid,
+            'reembolso_cargo' => $this->context->getCurrentLocale()->formatPrice($cargo, $iso),
+            'total_paid_seurcashondelivery' => $this->context->getCurrentLocale()->formatPrice($total_paid, $iso),
             'save_total_paid_seurcashondelivery_OK' => $save_OK,
             'modulo' => $modulo
         ));
+
         if (version_compare(_PS_VERSION_, '1.5', '<'))
             return $this->display($this->path, 'views/templates/hook/cargocomprareembolso.tpl');
 
@@ -531,12 +545,7 @@ class SeurCashOnDelivery extends PaymentModule{
                     if (!is_null($carrier) && Validate::isLoadedObject($carrier))
                         $order->carrier_tax_rate = $carrier->getTaxesRate(new Address($this->context->cart->{Configuration::get('PS_TAX_ADDRESS_TYPE')}));
 
-//                    $cargo_neto = Tools::ps_round($cart_Amount/((float)($order->carrier_tax_rate/100)+1),2);
-//                    $cargo_rate = Tools::ps_round(($cart_Amount - $cargo_neto),2);
-
-                    $cargo_neto = $cart_Amount;
-                    $cargo_rate = 0;
-
+                    $cargo_neto = Tools::ps_round($cart_Amount/((float)($order->carrier_tax_rate/100)+1),2);
 
                     $order->total_shipping_tax_excl = Tools::ps_round(($this->context->cart->getPackageShippingCost((int)$id_carrier, false, null, $order->product_list)+$cargo_neto),2);
                     $order->total_shipping_tax_incl = Tools::ps_round(($this->context->cart->getPackageShippingCost((int)$id_carrier, true, null, $order->product_list)+$cart_Amount),2);
@@ -594,7 +603,7 @@ class SeurCashOnDelivery extends PaymentModule{
                 //The method addOrderPayment of the class Order make a create a paymentOrder
                 //    linked to the order reference and not to the order id
 
-                if (!$order->addOrderPayment($amount_paid+$cart_Amount+$cargo_rate))
+                if (!$order->addOrderPayment($amount_paid + $cart_Amount))
                     throw new PrestaShopException('Can\'t save Order Payment');
             }
 
@@ -664,9 +673,9 @@ class SeurCashOnDelivery extends PaymentModule{
                                 '<tr style="background-color: '.($key % 2 ? '#DDE2E6' : '#EBECEE').';">
 								<td style="padding: 0.6em 0.4em;">'.$product['reference'].'</td>
 								<td style="padding: 0.6em 0.4em;"><strong>'.$product['name'].(isset($product['attributes']) ? ' - '.$product['attributes'] : '').' - '.Tools::displayError('Customized').(!empty($customization_text) ? ' - '.$customization_text : '').'</strong></td>
-								<td style="padding: 0.6em 0.4em; text-align: right;">'.Tools::displayPrice(Product::getTaxCalculationMethod() == PS_TAX_EXC ?  Tools::ps_round($price, 2) : $price_wt, $this->context->currency, false).'</td>
+								<td style="padding: 0.6em 0.4em; text-align: right;">'.$this->formatPriceCompat(Product::getTaxCalculationMethod() == PS_TAX_EXC ?  Tools::ps_round($price, 2) : $price_wt, $this->context->currency).'</td>
 								<td style="padding: 0.6em 0.4em; text-align: center;">'.$customization_quantity.'</td>
-								<td style="padding: 0.6em 0.4em; text-align: right;">'.Tools::displayPrice($customization_quantity * (Product::getTaxCalculationMethod() == PS_TAX_EXC ? Tools::ps_round($price, 2) : $price_wt), $this->context->currency, false).'</td>
+								<td style="padding: 0.6em 0.4em; text-align: right;">'.$this->formatPriceCompat($customization_quantity * (Product::getTaxCalculationMethod() == PS_TAX_EXC ? Tools::ps_round($price, 2) : $price_wt), $this->context->currency).'</td>
 							</tr>';
                         }
 
@@ -675,9 +684,9 @@ class SeurCashOnDelivery extends PaymentModule{
                                 '<tr style="background-color: '.($key % 2 ? '#DDE2E6' : '#EBECEE').';">
 								<td style="padding: 0.6em 0.4em;">'.$product['reference'].'</td>
 								<td style="padding: 0.6em 0.4em;"><strong>'.$product['name'].(isset($product['attributes']) ? ' - '.$product['attributes'] : '').'</strong></td>
-								<td style="padding: 0.6em 0.4em; text-align: right;">'.Tools::displayPrice(Product::getTaxCalculationMethod() == PS_TAX_EXC ? Tools::ps_round($price, 2) : $price_wt, $this->context->currency, false).'</td>
+								<td style="padding: 0.6em 0.4em; text-align: right;">'.$this->formatPriceCompat(Product::getTaxCalculationMethod() == PS_TAX_EXC ? Tools::ps_round($price, 2) : $price_wt, $this->context->currency).'</td>
 								<td style="padding: 0.6em 0.4em; text-align: center;">'.((int)$product['cart_quantity'] - $customization_quantity).'</td>
-								<td style="padding: 0.6em 0.4em; text-align: right;">'.Tools::displayPrice(((int)$product['cart_quantity'] - $customization_quantity) * (Product::getTaxCalculationMethod() == PS_TAX_EXC ? Tools::ps_round($price, 2) : $price_wt), $this->context->currency, false).'</td>
+								<td style="padding: 0.6em 0.4em; text-align: right;">'.$this->formatPriceCompat(((int)$product['cart_quantity'] - $customization_quantity) * (Product::getTaxCalculationMethod() == PS_TAX_EXC ? Tools::ps_round($price, 2) : $price_wt), $this->context->currency).'</td>
 							</tr>';
 
                         // Check if is not a virutal product for the displaying of shipping
@@ -734,7 +743,7 @@ class SeurCashOnDelivery extends PaymentModule{
                                 CartRule::copyConditions($cart_rule['obj']->id, $voucher->id);
 
                                 $params = array(
-                                    '{voucher_amount}' => Tools::displayPrice($voucher->reduction_amount, $this->context->currency, false),
+                                    '{voucher_amount}' => $this->formatPriceCompat($voucher->reduction_amount, $this->context->currency),
                                     '{voucher_num}' => $voucher->code,
                                     '{firstname}' => $this->context->customer->firstname,
                                     '{lastname}' => $this->context->customer->lastname,
@@ -766,7 +775,7 @@ class SeurCashOnDelivery extends PaymentModule{
                         $cart_rules_list .= '
 						<tr style="background-color:#EBECEE;">
 							<td colspan="4" style="padding:0.6em 0.4em;text-align:right">'.Tools::displayError('Voucher name:').' '.$cart_rule['obj']->name.'</td>
-							<td style="padding:0.6em 0.4em;text-align:right">'.($values['tax_incl'] != 0.00 ? '-' : '').Tools::displayPrice($values['tax_incl'], $this->context->currency, false).'</td>
+							<td style="padding:0.6em 0.4em;text-align:right">'.($values['tax_incl'] != 0.00 ? '-' : '').$this->formatPriceCompat($values['tax_incl'], $this->context->currency).'</td>
 						</tr>';
                     }
 
@@ -899,11 +908,12 @@ class SeurCashOnDelivery extends PaymentModule{
                             '{payment}' => Tools::substr($order->payment, 0, 32),
                             '{products}' => $this->formatProductAndVoucherForEmail($products_list),
                             '{discounts}' => $this->formatProductAndVoucherForEmail($cart_rules_list),
-                            '{total_paid}' => Tools::displayPrice($order->total_paid, $this->context->currency, false),
-                            '{total_products}' => Tools::displayPrice($order->total_paid - $order->total_shipping - $order->total_wrapping + $order->total_discounts, $this->context->currency, false),
-                            '{total_discounts}' => Tools::displayPrice($order->total_discounts, $this->context->currency, false),
-                            '{total_shipping}' => Tools::displayPrice($order->total_shipping, $this->context->currency, false),
-                            '{total_wrapping}' => Tools::displayPrice($order->total_wrapping, $this->context->currency, false));
+                            '{total_paid}' => $this->formatPriceCompat($order->total_paid, $this->context->currency),
+                            '{total_products}' => $this->formatPriceCompat($order->total_paid - $order->total_shipping - $order->total_wrapping + $order->total_discounts, $this->context->currency),
+                            '{total_discounts}' => $this->formatPriceCompat($order->total_discounts, $this->context->currency),
+                            '{total_shipping}' => $this->formatPriceCompat($order->total_shipping, $this->context->currency),
+                            '{total_wrapping}' => $this->formatPriceCompat($order->total_wrapping, $this->context->currency)
+                        );
 
                         if (is_array($extraVars))
                             $data = array_merge($data, $extraVars);
@@ -1192,9 +1202,9 @@ class SeurCashOnDelivery extends PaymentModule{
                             '<tr style="background-color: '.($key % 2 ? '#DDE2E6' : '#EBECEE').';">
 							<td style="padding: 0.6em 0.4em;">'.$product['reference'].'</td>
 							<td style="padding: 0.6em 0.4em;"><strong>'.$product['name'].(isset($product['attributes']) ? ' - '.$product['attributes'] : '').' - '.$this->l('Customized').(!empty($customizationText) ? ' - '.$customizationText : '').'</strong></td>
-							<td style="padding: 0.6em 0.4em; text-align: right;">'.Tools::displayPrice(Product::getTaxCalculationMethod() == PS_TAX_EXC ? $price : $price_wt, $currency, false).'</td>
+							<td style="padding: 0.6em 0.4em; text-align: right;">'.$this->formatPriceCompat(Product::getTaxCalculationMethod() == PS_TAX_EXC ? $price : $price_wt, $currency).'</td>
 							<td style="padding: 0.6em 0.4em; text-align: center;">'.$customizationQuantity.'</td>
-							<td style="padding: 0.6em 0.4em; text-align: right;">'.Tools::displayPrice($customizationQuantity * (Product::getTaxCalculationMethod() == PS_TAX_EXC ? $price : $price_wt), $currency, false).'</td>
+							<td style="padding: 0.6em 0.4em; text-align: right;">'.$this->formatPriceCompat($customizationQuantity * (Product::getTaxCalculationMethod() == PS_TAX_EXC ? $price : $price_wt), $currency).'</td>
 						</tr>';
                     }
 
@@ -1203,9 +1213,9 @@ class SeurCashOnDelivery extends PaymentModule{
                             '<tr style="background-color: '.($key % 2 ? '#DDE2E6' : '#EBECEE').';">
 							<td style="padding: 0.6em 0.4em;">'.$product['reference'].'</td>
 							<td style="padding: 0.6em 0.4em;"><strong>'.$product['name'].(isset($product['attributes']) ? ' - '.$product['attributes'] : '').'</strong></td>
-							<td style="padding: 0.6em 0.4em; text-align: right;">'.Tools::displayPrice(Product::getTaxCalculationMethod() == PS_TAX_EXC ? $price : $price_wt, $currency, false).'</td>
+							<td style="padding: 0.6em 0.4em; text-align: right;">'.$this->formatPriceCompat(Product::getTaxCalculationMethod() == PS_TAX_EXC ? $price : $price_wt, $currency).'</td>
 							<td style="padding: 0.6em 0.4em; text-align: center;">'.((int)($product['cart_quantity']) - $customizationQuantity).'</td>
-							<td style="padding: 0.6em 0.4em; text-align: right;">'.Tools::displayPrice(((int)($product['cart_quantity']) - $customizationQuantity) * (Product::getTaxCalculationMethod() == PS_TAX_EXC ? $price : $price_wt), $currency, false).'</td>
+							<td style="padding: 0.6em 0.4em; text-align: right;">'.$this->formatPriceCompat(((int)($product['cart_quantity']) - $customizationQuantity) * (Product::getTaxCalculationMethod() == PS_TAX_EXC ? $price : $price_wt), $currency).'</td>
 						</tr>';
                 } // end foreach ($products)
                 $query = rtrim($query, ',');
@@ -1270,7 +1280,7 @@ class SeurCashOnDelivery extends PaymentModule{
                             $voucher->value = (float)$value - $amount_to_add;
                             $voucher->add();
                             $params = array();
-                            $params['{voucher_amount}'] = Tools::displayPrice($voucher->value, $currency, false);
+                            $params['{voucher_amount}'] = $this->formatPriceCompat($voucher->value, $currency);
                             $params['{voucher_num}'] = $voucher->name;
                             $params['{firstname}'] = $customer->firstname;
                             $params['{lastname}'] = $customer->lastname;
@@ -1289,7 +1299,7 @@ class SeurCashOnDelivery extends PaymentModule{
                     $discountsList .=
                         '<tr style="background-color:#EBECEE;">
 							<td colspan="4" style="padding: 0.6em 0.4em; text-align: right;">'.$this->l('Voucher code:').' '.$objDiscount->name.'</td>
-							<td style="padding: 0.6em 0.4em; text-align: right;">'.($value != 0.00 ? '-' : '').Tools::displayPrice($value, $currency, false).'</td>
+							<td style="padding: 0.6em 0.4em; text-align: right;">'.($value != 0.00 ? '-' : '').$this->formatPriceCompat($value, $currency).'</td>
 					</tr>';
                 }
 
@@ -1382,11 +1392,11 @@ class SeurCashOnDelivery extends PaymentModule{
                         '{payment}' => Tools::substr($order->payment, 0, 32),
                         '{products}' => $productsList,
                         '{discounts}' => $discountsList,
-                        '{total_paid}' => Tools::displayPrice($order->total_paid, $currency, false),
-                        '{total_products}' => Tools::displayPrice($order->total_paid - $order->total_shipping - $order->total_wrapping + $order->total_discounts, $currency, false),
-                        '{total_discounts}' => Tools::displayPrice($order->total_discounts, $currency, false),
-                        '{total_shipping}' => Tools::displayPrice($order->total_shipping, $currency, false),
-                        '{total_wrapping}' => Tools::displayPrice($order->total_wrapping, $currency, false));
+                        '{total_paid}' => $this->formatPriceCompat($order->total_paid, $currency),
+                        '{total_products}' => $this->formatPriceCompat($order->total_paid - $order->total_shipping - $order->total_wrapping + $order->total_discounts, $currency),
+                        '{total_discounts}' => $this->formatPriceCompat($order->total_discounts, $currency),
+                        '{total_shipping}' => $this->formatPriceCompat($order->total_shipping, $currency),
+                        '{total_wrapping}' => $this->formatPriceCompat($order->total_wrapping, $currency));
 
                     if (is_array($extraVars))
                         $data = array_merge($data, $extraVars);
@@ -1626,4 +1636,19 @@ class SeurCashOnDelivery extends PaymentModule{
     {
         return (_PS_BASE_URL_.__PS_BASE_URI__."modules/".$module."/".$controller);
     }
+
+    private function formatPriceCompat($amount, $currency = null)
+    {
+        // 1) Si existe Tools::displayPrice (PS <= 1.7), úsalo
+        if (method_exists('Tools', 'displayPrice')) {
+            return Tools::displayPrice((float) $amount, $currency ?: $this->context->currency);
+        }
+
+        // 2) PS 1.7/8/9: usa el locale
+        $curr = $currency ?: $this->context->currency;
+        $iso  = $curr ? $curr->iso_code : 'EUR';
+
+        return $this->context->getCurrentLocale()->formatPrice((float) $amount, $iso);
+    }
+
 }

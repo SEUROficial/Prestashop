@@ -687,6 +687,8 @@ $sql[] = "ALTER TABLE `"._DB_PREFIX_."seur2_order` ADD COLUMN insured tinyint(1)
 $sql[] = "INSERT INTO `"._DB_PREFIX_."seur2_services` (id_seur_services, id_seur_services_type, name) 
             VALUES (1, 1, 'S24')";
 
+$sql[] = "ALTER TABLE `"._DB_PREFIX_."seur2_query` ADD COLUMN failed_attempts INT DEFAULT 0;";
+
 foreach ($sql as $query) {
     if (Db::getInstance()->execute($query) == false) {
         return false;

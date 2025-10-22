@@ -45,13 +45,21 @@ class SeurCashOnDeliveryPaymentModuleFrontController extends ModuleFrontControll
 		if (!$this->module->_checkCurrency($cart))
 			Tools::redirect('index.php?controller=order');
 
+        // Moneda actual
+        $currency = $this->context->currency; // objeto Currency
+        $iso = $currency ? $currency->iso_code : null;
+
+        $cargo = $this->module->calculateCartAmount($cart);
+        $total = $cart->getOrderTotal(true, Cart::BOTH)+$this->module->calculateCartAmount($cart);
+
 		$this->context->smarty->assign(array(
 			'nbProducts' => $cart->nbProducts(),
-			'cargo' => $this->module->calculateCartAmount($cart),
-            'total' => $cart->getOrderTotal(true, Cart::BOTH)+$this->module->calculateCartAmount($cart),
+			'cargo' => $this->context->getCurrentLocale()->formatPrice($cargo, $iso),
+            'total' => $this->context->getCurrentLocale()->formatPrice($total, $iso),
 			'this_path' => $this->module->getPathUri(),
 			'this_path_ssl' => Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/'.$this->module->name.'/'
 		));
+
 		$this->setTemplate('payment_execution.tpl');
 	}
 }

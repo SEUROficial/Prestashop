@@ -25,8 +25,6 @@
  *  International Registered Trademark & Property of PrestaShop SA
  */
 
-if (!defined('_CAN_LOAD_FILES_')) exit;
-
 if (!defined('_PS_VERSION_')) exit;
 
 if (!class_exists('SeurLib')) include_once(_PS_MODULE_DIR_.'seur/classes/SeurLib.php');
