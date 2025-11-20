@@ -18,8 +18,8 @@
         <div class='module_seur_logo'></div>
         <div class='seur_opcion'>
             <div class="seur_texto">
-                <span class="header">{l s='¿Quieres enviar este pedido con Seur?' mod='seur'}</span><br>
-                <span>{l s='Pulsa el botón para convertir este envío con SEUR' mod='seur'}</span><br>
+                <span class="header">{l s='Would you like to send this order with Seur?' mod='seur'}</span><br>
+                <span>{l s='Press the button to convert this shipment with SEUR' mod='seur'}</span><br>
             </div>
             <div class="seur_texto seur_boton">
                 <button class="btn btn-default btn-disk" id="seur_new_order"
@@ -33,9 +33,9 @@
         <div class='seur_form'>
             <form action="{$urlmodule}" method="post" id="form_order_new_shipping">
             <div class="seur_texto seur_select">
-                <label>{l s='Selecciona un transportista' mod='seur'}</label>
+                <label>{l s='Select a carrier' mod='seur'}</label>
                 <select name="seur_carrier" id="seur_carrier" >
-                    <!--<option value="">{l s='Selecciona un transportista' mod='seur'}</option>-->
+                    <!--<option value="">{l s='Select a carrier' mod='seur'}</option>-->
                     {foreach from=$carriers item=carrier}
                         <option value="{$carrier.id_seur_carrier}">{$carrier.name}</option>
                     {/foreach}
@@ -50,8 +50,8 @@
             </form>
             {else}
                 <div class="seur_texto">
-                    <span class="header">{l s='No ha dado de alta transportistas de Seur' mod='seur'}</span><br>
-                    <span>{l s='Acceda a la configuración de Transportistas SEUR para darlos de alta' mod='seur'}</span><br>
+                    <span class="header">{l s='No Seur carriers have been registered' mod='seur'}</span><br>
+                    <span>{l s='Access the SEUR Carriers settings to register them' mod='seur'}</span><br>
                 </div>
         </div>
         {/if}

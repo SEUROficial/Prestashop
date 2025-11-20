@@ -396,7 +396,7 @@
     clear: both;
     display:block;
     font-family: Lato;
-    font-size: 20px;
+    font-size: 15px;
     color: #404040;
     text-transform: uppercase;
     font-weight: bold;
@@ -580,7 +580,7 @@
 
 .seur_boton_actualiza{
     position: relative;
-    bottom: -55px;
+    bottom: -25px;
 }
 
 .seur_boton_actualiza button::before{
@@ -776,4 +776,8 @@
 }
 .module_seur_edit label {
     margin-bottom: 0;
+}
+
+.boton-acciones-masivas {
+    padding-top: 10px;
 }

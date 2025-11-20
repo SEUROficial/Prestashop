@@ -76,10 +76,10 @@
 				</div>
 				<div class="module_seur_weight">
 					<div>
-						<label>{l s='Envío asegurado' mod='seur'}</label>
+						<label>{l s='Insured shipping' mod='seur'}</label>
 						<select name="insured" id="insured" {if $labeled} disabled="disabled" {/if}>
 							<option {if $insured == 0 } selected {/if} value="0">{l s='No' mod='seur'}</option>
-							<option {if $insured == 1 } selected {/if} value="1">{l s='Si' mod='seur'}</option>
+							<option {if $insured == 1 } selected {/if} value="1">{l s='Yes' mod='seur'}</option>
 						</select>
 					</div>
 				</div>
@@ -199,6 +199,11 @@
 									<option value="{$key}" {if $service_code==$key }selected{/if}>{$item}</option>
 								{/foreach}
 							</select>
+						</div>
+						<div class="col-xs-12 col-sm-6" id="divPudoId" style="display:none;">
+							<label>{l s='PudoID' mod='seur'}</label>
+							<input type="hidden" id="pudoId_prev" value="{$pudoId}">
+							<input type="text" name="pudoId" id="pudoId" value="{$pudoId}">
 						</div>
 					{/if}
 					<div style="clear:both"></div>

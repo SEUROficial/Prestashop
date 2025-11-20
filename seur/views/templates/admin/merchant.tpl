@@ -79,7 +79,7 @@
             {foreach from=$lista_ccc item=ccc_item}
                 <a {if $id_seur_ccc == $ccc_item['id_seur_ccc']} class="active" {/if} href="{$module_path}&ccc={$ccc_item['id_seur_ccc']}">{l s='Datos de cuenta ccc ' mod='serur'}{$ccc_item['ccc']}</a>
             {/foreach}
-            <a class="new_account_ccc">{l s='Añadir Nueva Cuenta CCC' mod='seur'}</a>
+            <a class="new_account_ccc">{l s='Add New CCC Account' mod='seur'}</a>
             <input type="hidden" id="id_seur_ccc" name="id_seur_ccc" value="{$id_seur_ccc}" >
             <input type="hidden" id="id_shop" name="id_shop" value="{$id_shop}" >
         </div>
@@ -92,14 +92,14 @@
             <div class="col-xs-12 col-md-6 col-lg-3">
                 <div class="label_seur">* {l s='CCC' mod='seur'}</div>
                 <div class="input_seur"><input name="ccc" value="{$ccc}" maxlength="5"></div>
-                <div class="note_seur">{l s='Será proporcionado por SEUR (código numérico entre 1 y 5 dígitos)' mod='seur'}</div>
+                <div class="note_seur">{l s='It will be provided by SEUR (numeric code between 1 and 5 digits).' mod='seur'}</div>
             </div>
             <div class="col-xs-12 col-md-6 col-lg-3">
                 <div class="label_seur">*{l s='Franchise' mod='seur'}</div>
                 <div class="input_seur"><input name="franchise" value="{$franchise}" maxlength="2"></div>
             </div>
             <div class="col-xs-12 col-md-6 col-lg-3">
-                <div class="label_seur">*{l s='Nombre Personalizado' mod='seur'}</div>
+                <div class="label_seur">*{l s='Custom Name' mod='seur'}</div>
                 <div class="input_seur"><input name="nombre_personalizado" value="{$nombre_personalizado}" ></div>
             </div>
             <div class="xs-hidden md-hidden col-lg-12 sin-padding">
@@ -226,7 +226,7 @@
             </div>
         </div>
 
-        <div class="title_seur col-xs-12">{l s='Empresa registrada como Importadora o Exportadora' mod='seur'}</div>
+        <div class="title_seur col-xs-12">{l s='Company registered as an Importer or Exporter' mod='seur'}</div>
         <div class="box_seur col_xs_12 row">
             <div class="col-xs-12 col-md-6 col-lg-3">
                 <div class="label_seur">* {l s='rEORI' mod='seur'}</div>

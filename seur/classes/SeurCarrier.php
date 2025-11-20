@@ -118,4 +118,25 @@ class SeurCarrier extends ObjectModel
         return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
     }
 
+    public static function getByProductServiceCCC($product, $service, $id_seur_ccc)
+    {
+        $sql = "SELECT * FROM `"._DB_PREFIX_."seur2_carrier` sc
+                WHERE sc.product = '".pSQL($product)."' AND sc.service = '".pSQL($service)."' AND sc.id_seur_ccc = ".(int)$id_seur_ccc;
+        $carrier =  Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($sql);
+        if (!$carrier) {
+            $sql = "SELECT * FROM `"._DB_PREFIX_."seur2_carrier` sc
+                WHERE sc.product = '".pSQL($product)."' AND sc.service = '".pSQL($service)."' AND sc.id_seur_ccc = 0";
+            $carrier =  Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($sql);
+        }
+        return($carrier);
+    }
+
+    public static function getCarrierReferenceById($id_seur_carrier)
+    {
+        $sql = "SELECT carrier_reference FROM `"._DB_PREFIX_."seur2_carrier` 
+                WHERE id_seur_carrier = ".(int)$id_seur_carrier;
+        return (int)Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+    }
+
+
 }

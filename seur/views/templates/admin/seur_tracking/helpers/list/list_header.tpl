@@ -143,7 +143,7 @@
 						</span>
 					</a>
 				{if isset($sql) && $sql}
-					{assign var=sql_manager value=Profile::getProfileAccess(Context::getContext()->employee->id_profile, Tab::getIdFromClassName('AdminRequestSql'))}
+					{assign var=sql_manager value=Profile::getProfileAccess(Context::getContext()->employee->id_profile, Seur::findTabIdByClassName('AdminRequestSql'))}
 
 					{if $sql_manager.view == 1}
 						<a class="list-toolbar-btn" href="javascript:void(0);" onclick="$('.leadin').first().append('<div class=\'alert alert-info\'>' + $('#sql_query_{$list_id|escape:'html':'UTF-8'}').val() + '</div>'); $(this).attr('onclick', '');">

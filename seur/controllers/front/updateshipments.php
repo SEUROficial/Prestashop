@@ -1,10 +1,17 @@
 <?php
+require_once(_PS_MODULE_DIR_.'seur/scripts/ScriptHandler.php');
+require_once(_PS_MODULE_DIR_.'seur/classes/factories/UpdateShipmentsStatusHandlerFactory.php');
+require_once(_PS_MODULE_DIR_.'seur/classes/middleware/TokenAuthorizationMiddleware.php');
+
+use Seur\Prestashop\Commands\UpdateShipmentsStatus;
+use Seur\Prestashop\Factories\UpdateShipmentsStatusHandlerFactory;
+use Seur\Prestashop\Middleware\TokenAuthorizationMiddleware;
+use Seur\Prestashop\Scripts\ScriptHandler;
+
 if (!defined('_PS_VERSION_')) { exit; }
 
 class SeurUpdateshipmentsModuleFrontController extends ModuleFrontController
 {
-    public $ajax = true;
-
     private function respond($payload, $code = 200, $ctype = 'application/json')
     {
         http_response_code($code);
@@ -28,8 +35,8 @@ class SeurUpdateshipmentsModuleFrontController extends ModuleFrontController
         if (file_exists($autoload)) { require_once $autoload; }
 
         try {
-            $cmd = new \Seur\Prestashop\Commands\UpdateShipmentsStatus($this->context);
-            $out = (array) $cmd->handle(); // ['result','revisados','error']
+            $cmd = new UpdateShipmentsStatus();
+            $out = $cmd->handle(); // ['result','revisados','error']
             $this->respond($out);
         } catch (\Throwable $e) {
             $this->respond(['result'=>0,'revisados'=>0,'error'=>'#'.$e->getMessage()], 500);
@@ -42,9 +49,18 @@ class SeurUpdateshipmentsModuleFrontController extends ModuleFrontController
         $this->runUpdate();
     }
 
-    // Se ejecuta cuando NO hay ?ajax=1 → evitamos Smarty y devolvemos JSON igual
+    // Se ejecuta cuando NO hay ?ajax=1 → llamada script handler (con log)
     public function initContent()
     {
-        $this->runUpdate();
+        // Si por cualquier motivo llegara aquí en una petición AJAX, salimos.
+        if (Tools::getValue('ajax')) {
+            return;
+        }
+
+        // Ejecutar el handler de actualización de envíos (con logs)
+        $auth_middleware = new TokenAuthorizationMiddleware('secret', Configuration::get('SEUR2_API_CLIENT_SECRET'));
+        $script_instance = new ScriptHandler(new UpdateShipmentsStatusHandlerFactory, $auth_middleware);
+        $script_instance->__invoke();
+        die;
     }
 }

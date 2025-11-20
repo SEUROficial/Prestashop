@@ -119,7 +119,7 @@ class SeurOrder extends ObjectModel
 
     public static function getUpdatableOrders(){
 
-        $now = date("Y-m-d H:i:s");
+        $limit = 25;
 
         $sql = "SELECT DISTINCT so.id_order, id_seur_ccc 
                 FROM `"._DB_PREFIX_."seur2_order` so 
@@ -132,11 +132,10 @@ class SeurOrder extends ObjectModel
                 AND date_query < (DATE_SUB(NOW(), INTERVAL 8 HOUR))  
                 AND sq.failed_attempts < 3
                 ORDER BY so.id_order
-                LIMIT 25";
-
+                LIMIT " .$limit;
         $results =  Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
 
-        if ( ($results && (count($results) == 0 || empty($results))) || !$results){
+        if ( ($results && (count($results) < $limit || empty($results))) || !$results){
             $sql = "SELECT DISTINCT so.id_order, id_seur_ccc 
                 FROM `"._DB_PREFIX_."seur2_order` so 
                 INNER JOIN `"._DB_PREFIX_."orders` o ON o.id_order=so.id_order
@@ -146,8 +145,9 @@ class SeurOrder extends ObjectModel
                 AND date_labeled > (DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) 
                 AND so.id_order NOT IN (SELECT id_order FROM `"._DB_PREFIX_."seur2_query`)
                 ORDER BY so.id_order
-                LIMIT 25";
-            $results =  Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+                LIMIT ".($limit - ($results ? count($results) : 0));
+            $results2 =  Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+            $results = array_merge($results, $results2 ?? array());
         }
 
         $orders = array();
@@ -239,8 +239,250 @@ class SeurOrder extends ObjectModel
         }
     }
 
-    public static function getLabelFile($id_order) {
-        $sql = "SELECT label_files FROM `"._DB_PREFIX_."seur2_order` so WHERE id_seur_order = ".(int)$id_order;
+    public static function getLabelFile($id_seur_order) {
+        $sql = "SELECT label_files FROM `"._DB_PREFIX_."seur2_order` so WHERE id_seur_order = ".(int)$id_seur_order;
         return Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue($sql);
+    }
+
+    public static function addOrder($id_order, $id_seur_carrier, $recalculateShipping = true)
+    {
+        $db = Db::getInstance();
+        $link = $db->getLink();
+
+        if ($link instanceof \PDO) {
+            $link->beginTransaction();
+        } elseif ($link instanceof \mysqli) {
+            $link->begin_transaction();
+        }
+        try {
+            $order = new Order((int)$id_order);
+            $order_payment = OrderPayment::getByOrderReference($order->reference);
+            if (isset($order_payment[0])) {
+                $order_payment = $order_payment[0];
+            } else {
+                $order_payment = null;
+            }
+            $address_delivery = new AddressCore($order->id_address_delivery);
+            $cookie = Context::getContext()->cookie;
+            $newcountry = new Country($address_delivery->id_country, (int)$cookie->id_lang);
+            $seur_carrier = new SeurCarrier($id_seur_carrier);
+
+            $carrier = Carrier::getCarrierByReference($seur_carrier->carrier_reference);
+            $order->id_carrier = $carrier->id;
+            $order->save();
+
+            $id_order_carrier = $order->getIdOrderCarrier();
+            $order_carrier = new OrderCarrier($id_order_carrier);
+            $order_carrier->id_carrier = $carrier->id;
+
+            if ($id_order_carrier == 0) {
+                $order_carrier->id_order = (int)$id_order;
+                $order_carrier->id_order_invoice = OrderInvoice::getInvoiceByNumber($order->invoice_number)->id;
+                $order_carrier->add();
+            } else {
+                $order_carrier->update();
+            }
+
+            $seur_order = new SeurOrder();
+            /* --- refreshShippingCost actualiza:-------
+                order.total_shipping_tax_excl,
+                order.total_shipping_tax_incl,
+                order.total_shipping,
+                order.total_paid_tax_excl,
+                order.total_paid_tax_incl,
+                order.total_paid,
+                order_carrier.shipping_cost_tax_incl,
+                order_carrier.shipping_cost_tax_excl
+            */
+            if ($recalculateShipping) {
+                if (version_compare(_PS_VERSION_, '1.7', '<')) {
+                    $seur_order->refreshShippingCost($order);
+                }
+                else {
+                    $order->refreshShippingCost();
+                }
+            }
+
+            $seur_order->id_order = (int)$id_order;
+            $seur_order->id_seur_ccc = SeurLib::getCCC($newcountry->iso_code);
+            $seur_order->id_seur_carrier = (int)$id_seur_carrier;
+            $seur_order->numero_bultos = 1;
+            $seur_order->peso_bultos = ($order->getTotalWeight()?$order->getTotalWeight():1);
+            $seur_order->firstname = $address_delivery->firstname;
+            $seur_order->lastname = $address_delivery->lastname;
+            $seur_order->address1 = $address_delivery->address1;
+            $seur_order->address2 = $address_delivery->address2;
+            $seur_order->postcode = $address_delivery->postcode;
+            $seur_order->phone = SeurLib::cleanPhone($address_delivery->phone);
+            $seur_order->phone_mobile = SeurLib::cleanPhone($address_delivery->phone_mobile);
+            $seur_order->city = $address_delivery->city;
+            $seur_order->id_state = $address_delivery->id_state;
+            $seur_order->id_country = $address_delivery->id_country;
+            $seur_order->dni = $address_delivery->dni;
+            $seur_order->other = $address_delivery->other;
+            $seur_order->labeled = 0;
+            $seur_order->manifested = 0;
+            $seur_order->codfee = 0;
+            $seur_order->id_address_delivery = $order->id_address_delivery;
+            $seur_order->id_status = 0;
+            $seur_order->service = $seur_carrier->service;
+            $seur_order->product = $seur_carrier->product;
+            $seur_order->total_paid = $order->total_paid_real;
+
+            if (SeurLib::isCODPayment($order) && $order->module != SeurLib::CODPaymentModule) {
+                //cambiar el método COD seleccionado al de seurcashondelivery
+                $order->payment = SeurLib::CODPaymentName;
+                $order->module = SeurLib::CODPaymentModule;
+
+                $shipping_amount_tax_incl = $order->total_shipping_tax_incl; //ya actualizados al nuevo carrier (seur)
+                $shipping_amount_tax_excl = $order->total_shipping_tax_excl; //ya actualizados al nuevo carrier (seur)
+
+                //recalcular gastos por pago contrareembolso
+                $cod_amount = SeurLib::calculateCODAmount($order);
+                $order->total_paid_real = $order->total_products_wt + $shipping_amount_tax_incl + $cod_amount;
+                $order->total_paid = $order->total_products_wt + $shipping_amount_tax_incl + $cod_amount;
+                $order->total_paid_tax_excl = $order->total_products + $shipping_amount_tax_excl + $cod_amount;
+                $order->total_paid_tax_incl = $order->total_products_wt + $shipping_amount_tax_incl + $cod_amount;
+                $order->total_shipping = $shipping_amount_tax_incl + $cod_amount;
+
+                // PS - Corregir valor total_shipping_tax_excl
+                $cod_amount_tax_excl = $cod_amount;
+                $percentage_apply = Configuration::get('SEUR2_SETTINGS_COD_FEE_PERCENT');
+                if($percentage_apply){
+                    $percentage_apply = str_replace(',','.',$percentage_apply);
+                    $percentage_apply = $percentage_apply / 100;
+                    // Calculamos el número final
+                    $cod_amount_tax_excl = $cod_amount_tax_excl * (1 - $percentage_apply);
+                }
+
+                $order->total_shipping_tax_excl = $shipping_amount_tax_excl + $cod_amount_tax_excl;
+                $order->total_shipping_tax_incl = $shipping_amount_tax_incl + $cod_amount;
+
+                $seur_order->total_paid = $order->total_paid_real;
+                $seur_order->cashondelivery = $order->total_paid_real;
+                $seur_order->codfee = $cod_amount;
+
+                //actualizar payment
+                if (isset($order_payment)) {
+                    $order_payment->amount = $order->total_paid;
+                    $order_payment->payment_method = $order->payment;
+                    $order_payment->id_currency = $order->id_currency;
+                    $order_payment->update();
+                }
+
+                //actualizar costes envío transportista
+                $order_carrier->shipping_cost_tax_excl = $shipping_amount_tax_excl + $cod_amount;
+                $order_carrier->shipping_cost_tax_incl =  $shipping_amount_tax_incl + $cod_amount;
+                $order_carrier->update();
+            }
+
+            $result = $seur_order->save();
+            $order->save();
+
+            //obtener datos de la factura y modificar
+            if (isset($order_payment)) {
+                $order_invoice = $order_payment->getOrderInvoice($id_order);
+                if ($order_invoice) {
+                    $order_invoice->total_discount_tax_excl = $order->total_discounts_tax_excl;
+                    $order_invoice->total_discount_tax_incl = $order->total_discounts_tax_incl;
+                    $order_invoice->total_paid_tax_excl = $order->total_paid_tax_excl;
+                    $order_invoice->total_paid_tax_incl = $order->total_paid_tax_incl;
+                    $order_invoice->total_products = $order->total_products;
+                    $order_invoice->total_products_wt = $order->total_products_wt;
+                    $order_invoice->total_shipping_tax_excl = $order->total_shipping_tax_excl;
+                    $order_invoice->total_shipping_tax_incl = $order->total_shipping_tax_incl;
+                    $order_invoice->total_wrapping = $order->total_wrapping;
+                    $order_invoice->total_wrapping_tax_excl = $order->total_wrapping_tax_excl;
+                    $order_invoice->total_wrapping_tax_incl = $order->total_wrapping_tax_incl;
+                    $order_invoice->update();
+                }
+            }
+            if ($result) {
+                $link->commit();
+                return self::getByOrder($id_order)->id_seur_order;
+            }
+
+        } catch (Exception $e) {
+            SeurLib::log('ADD SEUR ORDER '.$id_order.' - '.$e->getMessage());
+        }
+
+        $link->rollback();
+        return false;
+    }
+
+    /**
+     * Re calculate shipping cost.
+     *
+     * @return object $order
+     */
+    public function refreshShippingCost($order)
+    {
+        if (empty($order->id)) {
+            return false;
+        }
+
+        if (!Configuration::get('PS_ORDER_RECALCULATE_SHIPPING')) {
+            return $order;
+        }
+
+        $fake_cart = new Cart((int) $order->id_cart);
+        $new_cart = $fake_cart->duplicate();
+        $new_cart = $new_cart['cart'];
+
+        // assign order id_address_delivery to cart
+        $new_cart->id_address_delivery = (int) $order->id_address_delivery;
+
+        // assign id_carrier
+        $new_cart->id_carrier = (int) $order->id_carrier;
+
+        //remove all products : cart (maybe change in the meantime)
+        foreach ($new_cart->getProducts() as $product) {
+            $new_cart->deleteProduct((int) $product['id_product'], (int) $product['id_product_attribute']);
+        }
+
+        // add real order products
+        foreach ($order->getProducts() as $product) {
+            $new_cart->updateQty(
+                $product['product_quantity'],
+                (int) $product['product_id'],
+                null,
+                false,
+                'up',
+                0,
+                null,
+                true,
+                true
+            ); // - skipAvailabilityCheckOutOfStock
+        }
+
+        // get new shipping cost
+        $base_total_shipping_tax_incl = (float) $new_cart->getPackageShippingCost((int) $new_cart->id_carrier, true, null);
+        $base_total_shipping_tax_excl = (float) $new_cart->getPackageShippingCost((int) $new_cart->id_carrier, false, null);
+
+        // calculate diff price, then apply new order totals
+        $diff_shipping_tax_incl = $order->total_shipping_tax_incl - $base_total_shipping_tax_incl;
+        $diff_shipping_tax_excl = $order->total_shipping_tax_excl - $base_total_shipping_tax_excl;
+
+        $order->total_shipping_tax_excl -= $diff_shipping_tax_excl;
+        $order->total_shipping_tax_incl -= $diff_shipping_tax_incl;
+        $order->total_shipping = $order->total_shipping_tax_incl;
+        $order->total_paid_tax_excl -= $diff_shipping_tax_excl;
+        $order->total_paid_tax_incl -= $diff_shipping_tax_incl;
+        $order->total_paid = $order->total_paid_tax_incl;
+        $order->update();
+
+        // save order_carrier prices, we'll save order right after this in update() method
+        $orderCarrierId = (int) $order->getIdOrderCarrier();
+        if ($orderCarrierId > 0) {
+            $order_carrier = new OrderCarrier($orderCarrierId);
+            $order_carrier->shipping_cost_tax_excl = $order->total_shipping_tax_excl;
+            $order_carrier->shipping_cost_tax_incl = $order->total_shipping_tax_incl;
+            $order_carrier->update();
+        }
+
+        // remove fake cart
+        $new_cart->delete();
+
+        return $order;
     }
 }

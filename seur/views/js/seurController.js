@@ -18,4 +18,13 @@ $(document).ready(function () {
         $("#form-seur2_order").append("<input type='hidden' name='massive_action' value='"+$("#massive_change").val()+"'>");
         $("#form-seur2_order").submit();
     });
+
+    $("#massive_change").on('change',function () {
+        var valor = $("#massive_change").val();
+
+        if(valor == "change_ccc")
+            $(".cambio-masivo-ccc").show();
+        else
+            $(".cambio-masivo-ccc").hide();
+    });
 });

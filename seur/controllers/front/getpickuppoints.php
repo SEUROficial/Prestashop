@@ -138,52 +138,18 @@ class SeurGetpickuppointsModuleFrontController extends ModuleFrontController
     /** Guarda o actualiza el punto elegido para el carrito actual (JSON) */
     protected function handleSaveSelection()
     {
-        $context = $this->context;
-        $id_cart = (int)$context->cart->id;
-
-        // ¿existe ya fila para este carrito?
-        $exists = Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue('
-            SELECT `id_cart`
-            FROM `'._DB_PREFIX_.'seur2_order_pos`
-            WHERE `id_cart` = '.(int)$id_cart
-        );
-
-        $id_seur_pos = pSQL(Tools::getValue('id_seur_pos'));
-        $company     = pSQL(urldecode((string)Tools::getValue('company')));
-        $address     = pSQL(urldecode((string)Tools::getValue('address')));
-        $city        = pSQL(urldecode((string)Tools::getValue('city')));
-        $postal_code = pSQL(urldecode((string)Tools::getValue('post_code')));
-        $timetable   = pSQL(urldecode((string)Tools::getValue('timetable')));
-        $phone       = pSQL(urldecode((string)Tools::getValue('phone')));
-
-        if ($exists !== false) {
-            $sql = '
-                UPDATE `'._DB_PREFIX_.'seur2_order_pos`
-                SET
-                    `id_seur_pos` = "'.$id_seur_pos.'",
-                    `company`     = "'.$company.'",
-                    `address`     = "'.$address.'",
-                    `city`        = "'.$city.'",
-                    `postal_code` = "'.$postal_code.'",
-                    `timetable`   = "'.$timetable.'",
-                    `phone`       = "'.$phone.'"
-                WHERE `id_cart` = '.(int)$id_cart;
-        } else {
-            $sql = '
-                INSERT INTO `'._DB_PREFIX_.'seur2_order_pos`
-                    (`id_cart`, `id_seur_pos`, `company`, `address`, `city`, `postal_code`, `timetable`, `phone`)
-                VALUES
-                    ('.(int)$id_cart.',
-                     "'.$id_seur_pos.'",
-                     "'.$company.'",
-                     "'.$address.'",
-                     "'.$city.'",
-                     "'.$postal_code.'",
-                     "'.$timetable.'",
-                     "'.$phone.'")';
-        }
-
-        $result = Db::getInstance()->execute($sql);
+        require_once _PS_MODULE_DIR_.SEUR_MODULE_NAME.'/classes/SeurOrderPos.php';
+        $id_cart = (int)$this->context->cart->id;
+        $seurOrderPos = SeurOrderPos::getByCartId((int)$this->context->cart->id);
+        $seurOrderPos->id_cart = $id_cart;
+        $seurOrderPos->id_seur_pos = substr(pSQL(Tools::getValue('id_seur_pos')), 0, 50);
+        $seurOrderPos->company = substr(pSQL(urldecode((string)Tools::getValue('company'))), 0, 50);
+        $seurOrderPos->address = substr(pSQL(urldecode((string)Tools::getValue('address'))), 0, 100);
+        $seurOrderPos->city = substr(pSQL(urldecode((string)Tools::getValue('city'))), 0, 15);
+        $seurOrderPos->postal_code = substr(pSQL(urldecode((string)Tools::getValue('post_code'))), 0, 12);
+        $seurOrderPos->timetable = substr(pSQL(urldecode((string)Tools::getValue('timetable'))), 0, 50);
+        $seurOrderPos->phone = substr(pSQL(urldecode((string)Tools::getValue('phone'))), 0, 20);
+        $seurOrderPos->save();
 
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['result' => (bool)$result], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

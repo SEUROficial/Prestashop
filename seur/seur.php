@@ -6,6 +6,9 @@
  * @copyright 2022 Seur Transporte
  * @license https://seur.com/ Proprietary
  */
+
+use Seur\Prestashop\SeurCron;
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -22,6 +25,9 @@ if (!class_exists('SeurOrder'))
 if (!class_exists('SeurCarrier'))
     require_once(_PS_MODULE_DIR_.'seur/classes/SeurCarrier.php');
 
+if (!class_exists('SeurOrderPos'))
+    require_once(_PS_MODULE_DIR_.'seur/classes/SeurOrderPos.php');
+
 include_once(_PS_MODULE_DIR_.'seur/classes/Range.php');
 include_once(_PS_MODULE_DIR_.'seur/classes/User.php');
 include_once(_PS_MODULE_DIR_.'seur/classes/Pickup.php');
@@ -32,6 +38,8 @@ include_once(_PS_MODULE_DIR_.'seur/classes/ProductType.php');
 include_once(_PS_MODULE_DIR_.'seur/classes/commands/UpdateShipmentsStatus.php');
 include_once(_PS_MODULE_DIR_.'seur/classes/commands/AutoCreateLabel.php');
 
+if (!class_exists('SeurCron'))
+    include_once(_PS_MODULE_DIR_.'seur/classes/SeurCron.php');
 
 if (!class_exists('SeurCashOnDelivery'))
     if (file_exists(_PS_MODULE_DIR_.'seurcashondelivery/seurcashondelivery.php'))
@@ -47,7 +55,7 @@ class Seur extends CarrierModule
     {
         $this->name = 'seur';
         $this->tab = 'shipping_logistics';
-        $this->version = '2.5.24';
+        $this->version = '2.5.25';
         $this->author = 'Seur';
         $this->need_instance = 0;
 
@@ -56,31 +64,41 @@ class Seur extends CarrierModule
         $this->js_url = 'https://maps.google.com/maps/api/js?key=' . Configuration::get('SEUR2_GOOGLE_API_KEY');
 
         $this->tabs['AdminSeurAdmin'] = array(
-            'label' => $this->l('Módulo SEUR'),
+            'label' => $this->l('SEUR Module'),
             'rootClass' => true,
         );
         $this->tabs['AdminSeurConfig'] = array(
-            'label' => $this->l('Configuración SEUR'),
+            'label' => $this->l('SEUR Settings'),
             'rootClass' => false,
             'parent' => 'AdminSeurAdmin',
         );
         $this->tabs['AdminSeurShipping'] = array(
-            'label' => $this->l('Gestión de pedidos'),
+            'label' => $this->l('Order Management'),
             'rootClass' => false,
             'parent' => 'AdminSeurAdmin',
         );
         $this->tabs['AdminSeurCollecting'] = array(
-            'label' => $this->l('Gestión de recogidas'),
+            'label' => $this->l('Collection Management'),
             'rootClass' => false,
             'parent' => 'AdminSeurAdmin',
         );
         $this->tabs['AdminSeurTracking'] = array(
-            'label' => $this->l('Seguimiento de envíos'),
+            'label' => $this->l('Tracking shipments'),
             'rootClass' => false,
             'parent' => 'AdminSeurAdmin',
         );
         $this->tabs['AdminSeurCarrier'] = array(
-            'label' => $this->l('Transportistas SEUR'),
+            'label' => $this->l('SEUR Carriers'),
+            'rootClass' => false,
+            'parent' => 'AdminSeurAdmin',
+        );
+        $this->tabs['AdminSeurBulkAssignCarrier'] = array(
+            'label' => $this->l('Orders without carrier'),
+            'rootClass' => false,
+            'parent' => 'AdminSeurAdmin',
+        );
+        $this->tabs['AdminSeurPickupLocations'] = array(
+            'label' => $this->l('Pick-up locations'),
             'rootClass' => false,
             'parent' => 'AdminSeurAdmin',
         );
@@ -123,6 +141,9 @@ class Seur extends CarrierModule
 
         if (!$this->isRegisteredInHook('displayCarrierExtraContent'))
             $this->registerHook('displayCarrierExtraContent');
+
+        if (!$this->isRegisteredInHook('actionDispatcher'))
+            $this->registerHook('actionDispatcher');
     }
 
     /*************************************************************************************
@@ -152,6 +173,7 @@ class Seur extends CarrierModule
             || !$this->registerHook('actionOrderEdited')
             || !$this->registerHook('actionAdminControllerSetMedia')
             || !$this->registerHook('displayCarrierExtraContent')
+            || !$this->registerHook('actionDispatcher')
         ) {
             $this->l('Hooks not registered');
             return false;
@@ -265,7 +287,7 @@ class Seur extends CarrierModule
         Configuration::updateValue('SEUR2_AUTO_CREATE_LABELS_PAYMENTS_METHODS_AVAILABLE', '');
         Configuration::updateValue('SEUR2_AUTO_CALCULATE_PACKAGES', 0);
 
-
+        Configuration::updateValue('SEUR2_CRON_KEY', Tools::passwdGen(32));
 
         return true;
     }
@@ -278,13 +300,13 @@ class Seur extends CarrierModule
         // Build menu tabs
         foreach ($this->tabs as $className => $data) {
             // Check if exists
-            $id_tab = $this->findTabIdByClassName($className);
+            $id_tab = self::findTabIdByClassName($className);
             if (!$id_tab) {
                 if ($data['rootClass']) {
                     $this->_confirmations[] = "Instalando Tab $className<br>\n";
                     $flagInstall = $flagInstall && $this->installModuleTab($className, $data['label'], 0);
                 } else {
-                    $id_tab = $this->findTabIdByClassName($data['parent']);
+                    $id_tab = self::findTabIdByClassName($data['parent']);
                     $this->_confirmations[] = "Instalando Tab $className cuyo padre es " . $data['parent'] . "<br>\n";
                     $flagInstall = $flagInstall && $this->installModuleTab($className, $data['label'], $id_tab);
                 }
@@ -294,7 +316,7 @@ class Seur extends CarrierModule
         return $flagInstall;
     }
 
-    protected function findTabIdByClassName(string $className): int
+    public static function findTabIdByClassName(string $className): int
     {
        // Compatible con todas las versiones
         return (int) \Db::getInstance()->getValue(
@@ -619,7 +641,7 @@ class Seur extends CarrierModule
 
     public function tabHasChilds($className)
     {
-        $id_tab = $this->findTabIdByClassName($className);
+        $id_tab = self::findTabIdByClassName($className);
         if ($id_tab) {
             $sql = 'SELECT * FROM `' . _DB_PREFIX_ . 'tab` WHERE `id_parent` = ' . $id_tab;
             $hijos = Db::getInstance()->executeS($sql);
@@ -629,7 +651,7 @@ class Seur extends CarrierModule
 
     public function uninstallModuleTab($tabClass)
     {
-        $idTab = $this->findTabIdByClassName($tabClass);
+        $idTab = self::findTabIdByClassName($tabClass);
         Logger::addLog("ADMIN TAB Uninstall. $tabClass, $idTab", 1);
         if ($idTab != 0) {
             $tab = new Tab($idTab);
@@ -744,7 +766,7 @@ class Seur extends CarrierModule
                 ));
         }
 
-        $id_tab = (int)$this->findTabIdByClassName('AdminModules');
+        $id_tab = (int)self::findTabIdByClassName('AdminModules');
         $this->context->smarty->assign(
             array(
                 'url_module' => $this->context->link->getAdminLink('AdminModules', true) . "&configure=seur&module_name=seur",
@@ -870,8 +892,13 @@ class Seur extends CarrierModule
         $this->context->controller->addJS($this->_path.'views/js/back.js');
         $this->context->controller->addCSS($this->_path.'views/css/back.css');
 
-        if (Tools::version_compare(_PS_VERSION_, '1.7', '>=')) {
+        $controller = Tools::getValue('controller');
+        if ($controller === 'AdminSeurShipping' || $controller === 'AdminSeurReturns') {
             $this->context->controller->addJS($this->_path . 'views/js/seurController.js');
+        }
+
+        if ($controller === 'AdminSeurBulkAssignCarrier') {
+            $this->context->controller->addJS($this->_path . 'views/js/seurAssignCarrierController.js');
         }
     }
 
@@ -1136,6 +1163,8 @@ class Seur extends CarrierModule
             if($orderSeur->id_status) {
                 $url_tracking = "https://www.seur.com/livetracking/pages/seguimiento-online.do?segOnlineIdentificador=" . $referencia . "&segOnlineFecha=" . substr($fecha, 8, 2) . "-" . substr($fecha, 5, 2) . "-" . substr($fecha, 0, 4);
             }
+            $show_returns_site_link = Configuration::get('SEUR2_ACTIVE_RETURNS_SITE_LINK')=="1";
+            $returns_site_url = Configuration::get('SEUR2_RETURNS_SITE_URL');
 
             $this->context->smarty->assign(
                 array(
@@ -1143,7 +1172,10 @@ class Seur extends CarrierModule
                     'reference' => $referencia,
                     'delivery' => "",
                     'seur_order_state' => (!empty($orderSeur->status_text) ? (string)$orderSeur->status_text : $this->l('Sin estado')),
-                    'url_tracking' => $url_tracking
+                    'url_tracking' => $url_tracking,
+                    'show_returns_site_link' => $show_returns_site_link,
+                    'returns_site_url' => $returns_site_url,
+	                'returns_site_link_img' => $this->_path.'views/img/seur-devoluciones.png',
                 )
             );
             return $this->display(__FILE__, 'views/templates/hook/orderDetail.tpl');
@@ -1383,6 +1415,18 @@ class Seur extends CarrierModule
             $auto_create_labels_payments_methods_available = '';
         Configuration::updateValue("SEUR2_AUTO_CREATE_LABELS_PAYMENTS_METHODS_AVAILABLE", $auto_create_labels_payments_methods_available);
         Configuration::updateValue("SEUR2_AUTO_CALCULATE_PACKAGES", SeurLib::getValue("SEUR2_AUTO_CALCULATE_PACKAGES"));
+        Configuration::updateValue("SEUR2_BULK_ASSIGN_CARRIER", SeurLib::getValue("SEUR2_BULK_ASSIGN_CARRIER"));
+        Seur::toggleSeurBulkAssignCarrierTab(Configuration::get("SEUR2_BULK_ASSIGN_CARRIER"));
+        Configuration::updateValue("SEUR2_ACTIVE_RETURNS_SITE_LINK", SeurLib::getValue("SEUR2_ACTIVE_RETURNS_SITE_LINK"));
+        Configuration::updateValue("SEUR2_RETURNS_SITE_URL", SeurLib::getValue("SEUR2_RETURNS_SITE_URL"));
+        Configuration::updateValue("SEUR2_UPDATE_SHIPMENT_CRON", SeurLib::getValue("SEUR2_UPDATE_SHIPMENT_CRON"));
+        Configuration::updateValue("SEUR2_UPDATE_SHIPMENT_INTERVAL", SeurLib::getValue("SEUR2_UPDATE_SHIPMENT_INTERVAL"));
+        if ((SeurLib::getValue("SEUR2_UPDATE_SHIPMENT_CRON") !== SeurLib::getValue("SEUR2_UPDATE_SHIPMENT_CRON_OLD_VALUE")) ||
+            (SeurLib::getValue("SEUR2_UPDATE_SHIPMENT_INTERVAL") !== SeurLib::getValue("SEUR2_UPDATE_SHIPMENT_INTERVAL_OLD_VALUE")))
+        {
+            $seurCron = new SeurCron();
+            $seurCron->reprogramShipmentUpdateCron(Configuration::get("SEUR2_UPDATE_SHIPMENT_CRON"), Configuration::get("SEUR2_UPDATE_SHIPMENT_INTERVAL"));
+        }
     }
 
     private function loadParamsMerchantSmarty($id_ccc)
@@ -1508,8 +1552,16 @@ class Seur extends CarrierModule
                 'auto_create_labels' => Configuration::get('SEUR2_AUTO_CREATE_LABELS'),
                 'auto_create_labels_payments_methods_available' => $auto_create_labels_payments_methods_available,
                 'auto_calculate_packages' => Configuration::get('SEUR2_AUTO_CALCULATE_PACKAGES'),
+                'bulk_assign_carrier' => Configuration::get('SEUR2_BULK_ASSIGN_CARRIER'),
+                'active_returns_site_link' => Configuration::get('SEUR2_ACTIVE_RETURNS_SITE_LINK'),
+                'returns_site_url' => Configuration::get('SEUR2_RETURNS_SITE_URL'),
+                'update_shipments_cron' => Configuration::get('SEUR2_UPDATE_SHIPMENT_CRON')??0,
+                'update_shipments_interval' => Configuration::get('SEUR2_UPDATE_SHIPMENT_INTERVAL')??3600,
+                'update_shipments_last_execution' => SeurCron::getLastRunTime(SeurCron::SEUR_UPDATE_SHIPMENTS_CRON_NAME),
+                'update_shipments_next_execution' => SeurCron::getNextRunTime(SeurCron::SEUR_UPDATE_SHIPMENTS_CRON_NAME),
             )
         );
+
         if (Configuration::get('SEUR2_SENDED_ORDER')==1) {
             $this->context->smarty->assign('sended_when', 1);
         } elseif (Configuration::get('SEUR2_SENDED_IN_MANIFEST')==1) {
@@ -1840,7 +1892,7 @@ class Seur extends CarrierModule
                 $this->context->smarty->assign('list_ccc', SeurCCC::getListCCC());
                 $this->context->smarty->assign('id_seur_ccc', $id_seur_ccc);
 
-                $this->context->smarty->assign('print_label', Context::getContext()->link->getAdminLink('AdminSeurShipping')."&action=print_label&id_order=".$seur_order['id_seur_order']);
+                $this->context->smarty->assign('print_label', Context::getContext()->link->getAdminLink('AdminSeurShipping')."&action=print_label&id_seur_order=".$seur_order['id_seur_order']);
                 $this->context->smarty->assign('url_edit_order', Context::getContext()->link->getAdminLink('AdminSeurShipping')."&action=edit_order&id_order=".$seur_order['id_order']);
 
                 $this->context->smarty->assign('send_to_digital_docu', (!$seur_order['brexit'] || !$seur_order['tariff']) && $order->hasInvoice() && !SeurLib::isEuropeanShipping($seur_order['id_seur_order']));
@@ -1852,6 +1904,8 @@ class Seur extends CarrierModule
                 $this->context->smarty->assign('services_types', SeurLib::getServicesTypes());
                 $this->context->smarty->assign('products', []);
                 $this->context->smarty->assign('services', []);
+                $seurOrderPos = SeurOrderPos::getByCartId($order->id_cart);
+                $this->context->smarty->assign('pudoId', $seurOrderPos ? $seurOrderPos->id_seur_pos : null);
 
                 $this->context->smarty->assign('shipping_type', $shipping_type);
                 $this->context->smarty->assign('product_code', $product_code);
@@ -1885,14 +1939,14 @@ class Seur extends CarrierModule
         }
     }
 
-    public function ajaxProcessUpdateShippings()
+/*    public function ajaxProcessUpdateShippings()
     {
         $command = new Seur\Prestashop\Commands\UpdateShipmentsStatus;
         $jsondata = $command->handle();
 
         echo json_encode($jsondata);
         die;  //para que no siga la ejecución y devuelva bien para el ajax
-    }
+    }*/
 
     public function hookDisplayCarrierExtraContent($params)
     {
@@ -1904,4 +1958,50 @@ class Seur extends CarrierModule
         ));
         return $this->fetch('module:seur/views/templates/hook/carrier_extra.tpl');
     }
+
+    protected function toggleSeurBulkAssignCarrierTab(bool $enabled): bool
+    {
+        $idTab = (int) self::findTabIdByClassName('AdminSeurBulkAssignCarrier');
+        if (!$idTab) {
+            $data = array(
+                'label' => $this->l('Pedidos sin transportista'),
+                'className' => 'AdminSeurBulkAssignCarrier',
+                'parent' => 'AdminSeurAdmin',
+            );
+            $id_tab = self::findTabIdByClassName($data['parent']);
+            $this->_confirmations[] = "Instalando Tab ".$data['className']." cuyo padre es " . $data['parent'] . "<br>\n";
+            $this->installModuleTab($data['className'], $data['label'], $id_tab);
+        }
+        $idTab = (int) self::findTabIdByClassName('AdminSeurBulkAssignCarrier');
+        $tab = new Tab($idTab);
+        $tab->active = $enabled ? 1 : 0;
+        $ok = (bool) $tab->update();
+
+        // (Recomendado) limpiar la caché del menú para ver el cambio al instante:
+        if (class_exists(\PrestaShop\PrestaShop\Core\Cache\Clearer\CacheClearerChain::class)) {
+            try {
+                (new \PrestaShop\PrestaShop\Core\Cache\Clearer\CacheClearerChain())->clear();
+            } catch (\Throwable $e) {}
+        }
+        return $ok;
+    }
+
+    public function hookActionDispatcher($params)
+    {
+        // Revisa a intervalos mínimos para no penalizar (ej. cada minuto)
+        $now = time();
+        $nextTick = (int) Configuration::get('SEUR2_NEXT_TICK')??0;
+        if ($now < $nextTick) {
+            return;
+        }
+        Configuration::updateValue('SEUR2_NEXT_TICK', $now + 60);
+
+        // Si hay tareas vencidas, dispara un "auto-ping" asíncrono a la URL del cron
+        $seurCron = new SeurCron();
+        if ($seurCron->hasDueTasks($now)) {
+            $seurCron->pingCronAsync();
+        }
+    }
+
+
 }

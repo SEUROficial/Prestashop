@@ -19,9 +19,13 @@
 {/if}
 </div>
 <div class="tabsSeur page_seur col-xs-12 col-sm-10">
-    <div class="shipSeur col-xs-12 col-md-3 {if $tabSelect == "shipping"}tabSelected{/if}"><a href="{$url_controller_shipping}"><img src="{$img_path|escape:'htmlall':'UTF-8'}ico_gest_envios.png"><span>{l s='Shipping Manage' mod='seur'}</span></a></div>
-    <div class="collectSeur col-xs-12 col-md-3  {if $tabSelect == "collecting"}tabSelected{/if}"><a href="{$url_controller_collecting}"><img src="{$img_path|escape:'htmlall':'UTF-8'}ico_gest_recogidas.png"><span>{l s='Collect Manage' mod='seur'}</span></a></div>
-    <div class="trackSeur col-xs-12 col-md-3  {if $tabSelect == "tracking"}tabSelected{/if}"><a href="{$url_controller_tracking}"><img src="{$img_path|escape:'htmlall':'UTF-8'}ico_seg_envios.png"><span>{l s='Tracking packages' mod='seur'}</span></a></div>
-<!--    <div class="returnSeur col-xs-12 col-md-3  {*if $tabSelect == "returning"*}tabSelected{*/if*}"><a href="{*$url_controller_returns*}"><img src="{*$img_path|escape:'htmlall':'UTF-8'*}ico_devoluciones.png"><span>{*l s='Returns' mod='seur'*}</span></a></div>-->
+    <div class="shipSeur col-xs-12 col-md-2 {if $tabSelect == "shipping"}tabSelected{/if}"><a href="{$url_controller_shipping}"><img src="{$img_path|escape:'htmlall':'UTF-8'}ico_gest_envios.png"><span>{l s='Shipping Manage' mod='seur'}</span></a></div>
+    <div class="collectSeur col-xs-12 col-md-2  {if $tabSelect == "collecting"}tabSelected{/if}"><a href="{$url_controller_collecting}"><img src="{$img_path|escape:'htmlall':'UTF-8'}ico_gest_recogidas.png"><span>{l s='Collect Manage' mod='seur'}</span></a></div>
+    <div class="trackSeur col-xs-12 col-md-2  {if $tabSelect == "tracking"}tabSelected{/if}"><a href="{$url_controller_tracking}"><img src="{$img_path|escape:'htmlall':'UTF-8'}ico_seg_envios.png"><span>{l s='Tracking packages' mod='seur'}</span></a></div>
+    {if $bulk_assign_enabled}
+    <div class="bulkAssignCarrierSeur col-xs-12 col-md-2  {if $tabSelect == "assignCarrier"}tabSelected{/if}"><a href="{$url_controller_bulk_assign_carrier}"><img src="{$img_path|escape:'htmlall':'UTF-8'}ico_asignar_transportista.png"><span>{l s='Assign carrier' mod='seur'}</span></a></div>
+    {/if}
+    <div class="pickupLocations col-xs-12 col-md-2  {if $tabSelect == "pickup-locations"}tabSelected{/if}"><a href="{$url_controller_pickup_locations}"><img src="{$img_path|escape:'htmlall':'UTF-8'}ico_pickup_locations.png"><span>{l s='Pick-up locations' mod='seur'}</span></a></div>
+    {*<div class="returnSeur col-xs-12 col-md-2 {if $tabSelect == "returning"}tabSelected{/if}"><a href="{$url_controller_returns}"><img src="{$img_path|escape:'htmlall':'UTF-8'}ico_devoluciones.png"><span>{l s='Returns' mod='seur'}</span></a></div> *}
 </div>
 <div class="clearfix"></div>

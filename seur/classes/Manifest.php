@@ -12,13 +12,13 @@ if (!defined('_PS_VERSION_'))
 
 class SeurManifest
 {
-    public static function createManifest($id_orders)
+    public static function createManifest($id_seur_orders)
     {
         $merchants  = array();
 
-        foreach($id_orders as $id_order)
+        foreach($id_seur_orders as $id_seur_order)
         {
-            $seurOrder = new SeurOrder((int)$id_order);
+            $seurOrder = new SeurOrder((int)$id_seur_order);
             $order = new Order((int)$seurOrder->id_order);
             $order_manifest = array();
 
@@ -111,42 +111,5 @@ class SeurManifest
             $pdf->Output("Manifiesto_".$merchant->ccc."_".date('YmdHis').".pdf", 'I');
         }
 
-    }
-
-    public function processBulkGeneraETQNacional(){
-        $id_orders = Tools::getValue('orderBox');
-
-        ob_end_clean();
-        $pdf = new PDFGenerator();
-        $pdf->SetPrintHeader(false);
-        $pdf->SetFontSize(12);
-        $pdf->SetMargins(15, 50, 15);
-
-        $this->context->cookie->__set('id_orders',json_encode($id_orders));
-        $this->context->cookie->update();
-
-        foreach($id_orders as $id_order)
-        {
-            $order = new Order((int)$id_order);
-            $address = new Address((int)$order->id_address_delivery);
-            $customer = new Customer((int)$order->id_customer);
-            $country = new Country($address->id_country, Context::getContext()->language->id);
-            $state = new State($address->id_state, Context::getContext()->language->i);
-
-            $order->etiquetado = 1;
-            $order->save();
-
-            Context::getcontext()->smarty->assign("address", $address);
-            Context::getcontext()->smarty->assign("customer", $customer);
-            Context::getcontext()->smarty->assign("state", $state);
-            Context::getcontext()->smarty->assign("country", $country);
-
-            $carrier = new Carrier($order->id_carrier);
-            $address_template = Context::getContext()->smarty->fetch(_PS_MODULE_DIR_."seur/views/templates/admin/manifest.tpl");
-
-            $pdf->AddPage('P', 'A4');
-            $pdf->writeHTML($address_template, false, false, false, false, 'P');
-        }
-        $pdf->Output("Manifiesto'.$this->tipo.date('YmdHis').'.pdf", 'I');
     }
 }

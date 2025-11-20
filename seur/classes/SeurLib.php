@@ -206,13 +206,15 @@ class SeurLib
 			WHERE sc.shipping_type = 2');
     }
 
-	public static function getSeurCarriers($active = true)
+	public static function getSeurCarriers($active = true, $only_not_pickup=false)
 	{
 		return Db::getInstance(_PS_USE_SQL_SLAVE_)->ExecuteS('
-			SELECT sc.*, c.id_carrier
+			SELECT sc.*, c.id_carrier, c.name
 			FROM `'._DB_PREFIX_.'seur2_carrier` sc
 			LEFT JOIN `'._DB_PREFIX_.'carrier` c ON c.id_reference=sc.carrier_reference AND c.deleted=0
-			'.($active ? 'WHERE c.active = 1' : '')
+			WHERE 1=1
+			'.($active ? ' AND c.active = 1' : '')
+            .($only_not_pickup ? ' AND sc.shipping_type != 2' : '')
 		);
 	}
 
@@ -1363,5 +1365,20 @@ class SeurLib
             return trim($value);
         }
         return $value;
+    }
+
+    public static function getCountries()
+    {
+        $sql = new DbQuery();
+        $sql->select('iso_code, country as name');
+        $sql->from('seur2_european_countries');
+
+        return Db::getInstance()->executeS($sql);
+    }
+
+    public static function getOrderCarrierByOrderId($order_id) {
+        $sql = "SELECT id_order_carrier FROM `" . _DB_PREFIX_ . "order_carrier` WHERE id_order = " . (int)$order_id;
+        $id_order_carrier = Db::getInstance()->getValue($sql);
+        return new OrderCarrier($id_order_carrier);
     }
 }

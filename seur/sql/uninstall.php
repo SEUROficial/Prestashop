@@ -44,6 +44,7 @@ $sql[] = 'DROP TABLE IF EXISTS `'._DB_PREFIX_.'seur2_products`';
 $sql[] = 'DROP TABLE IF EXISTS `'._DB_PREFIX_.'seur2_services`';
 $sql[] = 'DROP TABLE IF EXISTS `'._DB_PREFIX_.'seur2_status`';
 $sql[] = 'DROP TABLE IF EXISTS `'._DB_PREFIX_.'seur2_european_countries`';
+$sql[] = 'DROP TABLE IF EXISTS `'._DB_PREFIX_.'seur2_cron_tasks`';
 
 foreach ($sql as $query)
 {

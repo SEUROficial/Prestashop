@@ -56,7 +56,7 @@ class AutoCreateLabel implements CommandHandler
         if (!Validate::isLoadedObject($order))
             return false;
 
-        $delivery_price = $order_weigth = 0;
+        $order_weigth = 0;
         $products = $order->getProductsDetail();
 
         foreach ($products as $product) {
@@ -97,20 +97,6 @@ class AutoCreateLabel implements CommandHandler
 
             $id_employee = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow('
                 SELECT id_employee FROM `'._DB_PREFIX_.'employee` WHERE `id_profile` = 1'
-            );
-
-            $rate_data = array(
-                'town' => $seur_order->city,
-                'peso' => (float)$order_weigth,
-                'post_code' => $post_code,
-                'bultos' => $order_data['numero_bultos'],
-                'ccc' => $merchant_data['ccc'],
-                'franchise' => $merchant_data['franchise'],
-                'iso' => $newcountry->iso_code,
-                'iso_merchant' => $iso_merchant,
-                'id_employee' => $id_employee['id_employee'] ?? 1,
-                'product' => $seur_order->product,
-                'service' => $seur_order->service
             );
 
             $order_messages_str = '';
@@ -158,7 +144,6 @@ class AutoCreateLabel implements CommandHandler
             $label_data['valor_reembolso'] = "0";
 
             if (Seurlib::AddCOD($order)) {
-                $rate_data['reembolso'] = (float)$order->total_paid;
                 $label_data['reembolso'] = (float)$order->total_paid;
                 $label_data['clave_reembolso'] = "F";
                 $label_data['valor_reembolso'] = (float)$order->total_paid;
@@ -183,12 +168,12 @@ class AutoCreateLabel implements CommandHandler
                     'total_bultos' => $label_data['total_bultos'],
                     'total_kilos' => (float)$label_data['total_kilos'],
                     'direccion_consignatario' => $direccion,
-                    'consignee_town' => $datospos['city'],
-                    'codPostal_consignatario' => $datospos['postal_code'],
+                    'consignee_town' => $datospos['city'] != '' ? $datospos['city'] : $label_data['consignee_town'],
+                    'codPostal_consignatario' => $datospos['postal_code'] != '' ? $datospos['postal_code'] : $label_data['codPostal_consignatario'],
                     'telefono_consignatario' => SeurLib::cleanPhone(!empty($seur_order->phone) ? $seur_order->phone : $seur_order->phone_mobile),
                     'movil' => SeurLib::cleanPhone(!empty($seur_order->phone_mobile) ? $seur_order->phone_mobile : $seur_order->phone),
                     'name' => $name,
-                    'companyia' => $datospos['company'],
+                    'companyia' => $datospos['company'] != '' ? $datospos['company'] : $label_data['companyia'],
                     'email_consignatario' => Validate::isLoadedObject($customer) ? $customer->email : '',
                     'dni' => $seur_order->dni,
                     'info_adicional' => $info_adicional_str,
@@ -197,7 +182,6 @@ class AutoCreateLabel implements CommandHandler
                     'cod_centro' => $datospos['id_seur_pos'],
                     'iso_merchant' => $iso_merchant
                 );
-                $rate_data['cod_centro'] = $datospos['id_seur_pos'];
             }
 
             if ($order->hasInvoice()){

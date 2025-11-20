@@ -76,7 +76,7 @@
                 </div>
                 <div class="col-xs-12 col-md-12 col-lg-12">
                     <br>
-                    <div class="note_seur">{l s="Introduzca un procentaje para cargar a los clientes como recargo y / o un importe mínimo en caso de no llegar al importe del porcentaje." mod='seur'}</div>
+                    <div class="note_seur">{l s="Enter a percentage to charge customers as a surcharge and/or a minimum amount if the percentage amount is not reached." mod='seur'}</div>
                 </div>
             </div>
             <div class="col-xs-12 col-md-12 col-lg-12">
@@ -108,23 +108,23 @@
                     <input type="radio" name="SEUR2_SETTINGS_PRINT_TYPE" value="1"
                            {if $print_type==1 }checked{/if}> {l s='Pdf' mod='seur'}
                     <input type="radio" name="SEUR2_SETTINGS_PRINT_TYPE" value="2"
-                           {if $print_type==2 }checked{/if}> {l s='Etiqueta' mod='seur'}
+                           {if $print_type==2 }checked{/if}> {l s='Label' mod='seur'}
                     <input type="radio" name="SEUR2_SETTINGS_PRINT_TYPE" value="3"
                            {if $print_type==3 }checked{/if}> {l s='A4_3' mod='seur'}
                 </div>
                 <div class="col-xs-12">
-                    <div class="note_seur">{l s="Seleccione Pdf para impresora normal. La impresora térmica debe proveerla SEUR." mod='seur'}</div>
+                    <div class="note_seur">{l s="Select PDF for normal printer. The thermal printer must be provided by SEUR." mod='seur'}</div>
                 </div>
             </div>
             <div class="col-xs-12 col-md-12 col-lg-12">
                 <div class="radio_seur">
                     <input type="radio" name="SEUR2_SETTINGS_LABEL_REFERENCE_TYPE" value="1"
-                           {if $label_reference_type==1 }checked{/if}> {l s='Referencia pedido' mod='seur'}
+                           {if $label_reference_type==1 }checked{/if}> {l s='Order Reference' mod='seur'}
                     <input type="radio" name="SEUR2_SETTINGS_LABEL_REFERENCE_TYPE" value="2"
-                           {if $label_reference_type==2 }checked{/if}> {l s='Id pedido' mod='seur'}
+                           {if $label_reference_type==2 }checked{/if}> {l s='Order Id' mod='seur'}
                 </div>
                 <div class="col-xs-12">
-                    <div class="note_seur">{l s="Identificador a mostrar en la etiqueta" mod='seur'}</div>
+                    <div class="note_seur">{l s="Identifier to display on the label" mod='seur'}</div>
                 </div>
             </div>
         </div>
@@ -136,7 +136,7 @@
                        {if $collection_type==1 }checked{/if}> {l s='Automatic' mod='seur'}
             </div>
             <div class="col-xs-9 col-md-10 col-lg-11">
-                <div class="radio_seur note_seur">{l s="La recogida automática es generada automáticamente con el primer pedido del día." mod='seur'}</div>
+                <div class="radio_seur note_seur">{l s="Automatic collection is generated automatically with the first order of the day." mod='seur'}</div>
             </div>
             <div class="xs-hidden md-hidden col-lg-12 sin-padding"></div>
             <div class="radio_seur col-xs-3 col-md-2 col-lg-1">
@@ -144,7 +144,7 @@
                        {if $collection_type==2 }checked{/if}> {l s='Fix' mod='seur'}
             </div>
             <div class="col-xs-9 col-md-10 col-lg-11">
-                <div class="radio_seur note_seur">{l s="La recogida fija debe estar contratada con SEUR para pasar cada día a recoger." mod='seur'}</div>
+                <div class="radio_seur note_seur">{l s="The fixed collection must be contracted with SEUR to be collected every day." mod='seur'}</div>
             </div>
         </div>
 
@@ -158,7 +158,7 @@
             </div>
             <div class="col-xs-12 col-md-6 col-lg-3">
                 <div class="label_seur">&nbsp;</div>
-                <div class="note_seur">{l s="Lorem ipsum" mod='seur'} <!--a href="#">{l s="Click here" mod='seur'}</a-->
+                <div class="note_seur">{l s="You must have an API access key provided by Google. To obtain one, go to the following address and follow the instructions: https://developers.google.com/maps" mod='seur'} <!--a href="#">{l s="Click here" mod='seur'}</a-->
                 </div>
             </div>
         </div>
@@ -181,8 +181,8 @@
           </div>
           <div class="col-xs-6 col-md-6 col-lg-6">
             <div class="label_seur">{l s='Payments Methods' mod='seur'}</div>
-            <div class="note_seur">{l s="Seleccionar los métodos de pago que estarán activos para la creación automática de etiquetas." mod='seur'}</div>
-            <div class="note_seur">{l s="Pulsar Control o Shift para seleccionar más de 1." mod='seur'}</div>
+            <div class="note_seur">{l s="Select the payment methods that will be active for automatic label creation." mod='seur'}</div>
+            <div class="note_seur">{l s="Press Control or Shift to select more than 1." mod='seur'}</div>
               <div class="input_seur">
                 <select name="SEUR2_AUTO_CREATE_LABELS_PAYMENTS_METHODS_AVAILABLE[]" id="payment_methods" multiple>
                     {foreach $payments_methods as $payment}
@@ -202,15 +202,15 @@
           <div class="col-xs-12 col-md-12 col-lg-12">
             <div class="label_seur">{l s='Active' mod='seur'}</div>
             <div class="input_seur">
-                      <span class="switch prestashop-switch fixed-width-lg">
-                              <input type="radio" name="SEUR2_AUTO_CALCULATE_PACKAGES" id="generationPackages_on" value="1"
-                                     {if $auto_calculate_packages}checked="checked"{/if}>
-                              <label for="generationPackages_on" class="radioCheck">{l s="Yes" mod="seur"}</label>
-                              <input type="radio" name="SEUR2_AUTO_CALCULATE_PACKAGES" id="generationPackages_off" value="0"
-                                     {if !$auto_calculate_packages}checked="checked"{/if}>
-                              <label for="generationPackages_off" class="radioCheck">{l s="No" mod="seur"}</label>
-                              <a class="slide-button btn"></a>
-                      </span>
+              <span class="switch prestashop-switch fixed-width-lg">
+                      <input type="radio" name="SEUR2_AUTO_CALCULATE_PACKAGES" id="generationPackages_on" value="1"
+                             {if $auto_calculate_packages}checked="checked"{/if}>
+                      <label for="generationPackages_on" class="radioCheck">{l s="Yes" mod="seur"}</label>
+                      <input type="radio" name="SEUR2_AUTO_CALCULATE_PACKAGES" id="generationPackages_off" value="0"
+                             {if !$auto_calculate_packages}checked="checked"{/if}>
+                      <label for="generationPackages_off" class="radioCheck">{l s="No" mod="seur"}</label>
+                      <a class="slide-button btn"></a>
+              </span>
             </div>
           </div>
         </div>
@@ -232,12 +232,49 @@
                 </div>
             </div>
         </div>
+        <div class="title_seur col-xs-12">{l s="Enable bulk carrier assignment" mod='seur'}</div>
+        <div class="box_seur col_xs_12 row">
+            <div class="col-xs-12 col-md-12 col-lg-12">
+                <div class="label_seur">{l s='Active' mod='seur'}</div>
+                <div class="input_seur">
+                <span class="switch prestashop-switch fixed-width-lg">
+                        <input type="radio" name="SEUR2_BULK_ASSIGN_CARRIER" id="bulkAssignCarrier_on" value="1"
+                               {if $bulk_assign_carrier}checked="checked"{/if}>
+                        <label for="bulkAssignCarrier_on" class="radioCheck">{l s="Yes" mod="seur"}</label>
+                        <input type="radio" name="SEUR2_BULK_ASSIGN_CARRIER" id="bulkAssignCarrier_off" value="0"
+                               {if !$bulk_assign_carrier}checked="checked"{/if}>
+                        <label for="bulkAssignCarrier_off" class="radioCheck">{l s="No" mod="seur"}</label>
+                        <a class="slide-button btn"></a>
+                </span>
+                </div>
+            </div>
+        </div>
 
-
+        <div class="title_seur col-xs-12">{l s="Enable SEUR Returns site" mod='seur'}</div>
+        <div class="box_seur col_xs_12 row">
+            <div class="col-xs-12 col-md-12 col-lg-12">
+                <div class="label_seur">{l s='Active' mod='seur'}</div>
+                <div class="input_seur">
+                <span class="switch prestashop-switch fixed-width-lg">
+                        <input type="radio" name="SEUR2_ACTIVE_RETURNS_SITE_LINK" id="activeReturnsSiteLink_on" value="1"
+                               {if $active_returns_site_link}checked="checked"{/if}>
+                        <label for="activeReturnsSiteLink_on" class="radioCheck">{l s="Yes" mod="seur"}</label>
+                        <input type="radio" name="SEUR2_ACTIVE_RETURNS_SITE_LINK" id="activeReturnsSiteLink_off" value="0"
+                               {if !$active_returns_site_link}checked="checked"{/if}>
+                        <label for="activeReturnsSiteLink_off" class="radioCheck">{l s="No" mod="seur"}</label>
+                        <a class="slide-button btn"></a>
+                </span>
+                </div>
+            </div>
+            <div class="col-xs-12 col-md-12 col-lg-12">
+                <div class="label_seur">{l s="SEUR Returns site url" mod='seur'}</div>
+                <div class="input_seur"><input name="SEUR2_RETURNS_SITE_URL" value="{$returns_site_url}"></div>
+            </div>
+        </div>
         <div class="title_seur col-xs-12">{l s="Status Seur" mod='seur'}</div>
         <div class="box_seur col_xs_12 row">
             <div class="col-xs-12 col-md-12 col-lg-12">
-                <div class="label_seur">{l s='Cambiar automáticamente el estado de los pedidos a "Enviado":' mod='seur'}</div>
+                <div class="label_seur">{l s='Automatically change the status of orders to ‘Shipped’:' mod='seur'}</div>
                 <div class="radio_seur">
                     <input type="radio" name="SEUR2_MARK_SENDED" id="sended_off" value="0" {if $sended_when==0}checked="checked"{/if}>
                     {l s="Nunca" mod="seur"}
@@ -273,26 +310,58 @@
                 <div class="input_seur">{include file='./select_status_ps.tpl' name_select='SEUR2_STATUS_INCIDENCE' status_ps=$status_ps value=$status_incidence}</div>
             </div>
         </div>
+
+        <div class="title_seur col-xs-12">{l s="Automatic Update Shipments Status" mod='seur'} - SEUR Cron</div>
+        <div class="box_seur col_xs_12 row">
+            <div class="col-xs-12 col-md-6 col-lg-3">
+                <div class="label_seur">{l s='Active' mod='seur'}</div>
+                <div class="input_seur">
+                <span class="switch prestashop-switch fixed-width-lg">
+                        <input type="radio" name="SEUR2_UPDATE_SHIPMENT_CRON" id="activeUpdateShipmentCron_on" value="1"
+                               {if $update_shipments_cron}checked="checked"{/if}>
+                        <label for="activeUpdateShipmentCron_on" class="radioCheck">{l s="Yes" mod="seur"}</label>
+                        <input type="radio" name="SEUR2_UPDATE_SHIPMENT_CRON" id="activeUpdateShipmentCron_off" value="0"
+                               {if !$update_shipments_cron}checked="checked"{/if}>
+                        <label for="activeUpdateShipmentCron_off" class="radioCheck">{l s="No" mod="seur"}</label>
+                        <a class="slide-button btn"></a>
+                    <input type="hidden" name="SEUR2_UPDATE_SHIPMENT_CRON_OLD_VALUE" value="{$update_shipments_cron}">
+                </span>
+                </div>
+            </div>
+            <div class="col-xs-12 col-md-6 col-lg-3">
+                <div class="label_seur">{l s='Interval' mod='seur'}</div>
+                <div class="input_seur">
+                    <select name='SEUR2_UPDATE_SHIPMENT_INTERVAL' id='select_update_shipment_interval'>
+                        <option value="3600" {if $update_shipments_interval==3600}selected{/if}>{l s='Hourly' mod='seur'}</option>
+                        <option value="14400" {if $update_shipments_interval==14400}selected{/if}>{l s='Every 4 hours' mod='seur'}</option>
+                    </select>
+                    <input type="hidden" name="SEUR2_UPDATE_SHIPMENT_INTERVAL_OLD_VALUE" value="{$update_shipments_interval}">
+                </div>
+            </div>
+            <div class="col-xs-12 col-md-6 col-lg-3">
+                <div class="label_seur">{l s='Last Execution' mod='seur'}</div>
+                <div class="input_seur">{$update_shipments_last_execution}</div>
+            </div>
+            <div class="col-xs-12 col-md-6 col-lg-3">
+                <div class="label_seur">{l s='Next Execution' mod='seur'}</div>
+                <div class="input_seur">{$update_shipments_next_execution}</div>
+            </div>
+        </div>
+        {if !$update_shipments_cron}
+        <div class="title_seur col-xs-12">{l s="Automatic Update Shipments Status" mod='seur'} - {l s="System Cron" mod='seur'}</div>
         <div class="cron-alerts">
             <div class="alert alert-info">
                 {l s='You can set up a scheduled task to refresh the status of your shipments using the following URL:' mod='seur'}
                 <br><br>
-                {if $ps_version < 9 }
-                <strong>{$module_url}modules/seur/scripts/UpdateShipments.php?secret={$module_secret}</strong>
-                {else}
                 <strong>{$module_url}module/seur/updateshipments?secret={$module_secret}</strong>
-                {/if}
             </div>
             <div class="alert alert-info">
                 {l s='Alternatively, if you have access to the system console, you can create a CRON job like:' mod='seur'}
                 <br><br>
-                {if $ps_version < 9 }
-                <strong><code>* * * * * curl -s {$module_url}modules/seur/scripts/UpdateShipments.php?secret={$module_secret}</code></strong>
-                {else}
                 <strong><code>* * * * * curl -s {$module_url}module/seur/updateshipments?secret={$module_secret}</code></strong>
-                {/if}
             </div>
         </div>
+        {/if}
     <div class='clearfix'>
         <button type="submit" name="submitSettingsSeur" class="btn btn-default submitSeur"><i class="icon-save"></i> {l s="Save" mod="seur"}</button>
     </div>

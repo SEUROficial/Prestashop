@@ -23,7 +23,7 @@
  *  @license   http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  *  International Registered Trademark & Property of PrestaShop SA
  *}
-<div class="seur_table_block">
+<div class="box seur_table_block">
 	<table class="detail_step_by_step table table-bordered">
 		<tbody>
 			<tr>
@@ -37,3 +37,34 @@
 		</tbody>
 	</table>
 </div>
+
+{if $show_returns_site_link}
+<div class="seur_returns_site_link" style="justify-content:flex-end; margin: 0 0 16px 0; display: none;">
+	<a href="{$returns_site_url}" target="_blank" rel="noopener" style="background-color: white; padding: 2px; border-radius: 4px; border: 2px solid #005baa; display: inline-block;">
+		<img src="{$returns_site_link_img}" alt="{l s='SEUR Returns' mod='seur'}" />
+	</a>
+</div>
+	<script type="text/javascript">
+		(function() {
+			function ready(fn){
+				if (document.readyState!=='loading'){
+					fn();
+				} else {
+					document.addEventListener('DOMContentLoaded', fn);
+				}
+			}
+
+			function inject() {
+				try {
+					var header = document.querySelector('.page-header, header.page-header, h1.h1, h1');
+					if (!header) return;
+					var linkDiv = document.querySelector('.seur_returns_site_link');
+					if (!linkDiv) return;
+					header.parentNode.insertBefore(linkDiv, header);
+					linkDiv.style.display = 'flex';
+				} catch(e) { /* silencioso */ }
+			}
+			ready(inject);
+		})();
+	</script>
+{/if}

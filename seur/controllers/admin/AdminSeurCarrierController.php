@@ -64,21 +64,6 @@ class AdminSeurCarrierController extends ModuleAdminController
             $list_cccs[$ccc['name']] = $ccc['name'];
         }
 
-//        $this->_select = '
-//		a.id_currency,
-//		a.id_order AS id_pdf,
-//		login AS `login`,
-//		osl.`name` AS `osname`,
-//		CONCAT(login, " (",address.`firstname`," ",address.`lastname`,")") AS `customer`,
-//		os.`color`,
-//		IF((SELECT so.id_order FROM `'._DB_PREFIX_.'orders` so WHERE so.id_customer = a.id_customer AND so.id_order < a.id_order LIMIT 1) > 0, 0, 1) as new,
-//		country_lang.name as cname,
-//		IF(a.valid, 1, 0) badge_success,
-//		a.etiquetado,
-//		a.servido,
-//        ca.name as carrier_name,
-//        a.observaciones_etiqueta as msg';
-
         $this->_select = 'id_seur_carrier as id_seur2_carrier, ca.id_carrier, ca.name, st.name';
 
         $this->_defaultOrderBy = 'id_seur_carrier';
@@ -175,7 +160,7 @@ class AdminSeurCarrierController extends ModuleAdminController
                 'url_module' => $this->context->link->getAdminLink('AdminModules', true) . "&configure=seur&module_name=seur",
                 'url_controller' => $this->context->link->getAdminLink('AdminSeurShipping', true),
                 'img_path' => $this->module->getPath() . 'views/img/',
-                'module_path' => 'index.php?controller=AdminModules&configure=' . $this->module->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Tab::getIdFromClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
+                'module_path' => 'index.php?controller=AdminModules&configure=' . $this->module->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Seur::findTabIdByClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
                 'seur_url_basepath' => seurLib::getBaseLink(),
             ));
 
@@ -195,7 +180,7 @@ class AdminSeurCarrierController extends ModuleAdminController
                 'url_list' => $this->context->link->getAdminLink('AdminSeurCarrier', true),
                 'url_carrier' => $this->context->link->getAdminLink('AdminCarriers', true),
                 'img_path' => $this->module->path . 'views/img/',
-                'module_path' => 'index.php?controller=AdminModules&configure=' . $this->module->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Tab::getIdFromClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
+                'module_path' => 'index.php?controller=AdminModules&configure=' . $this->module->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Seur::findTabIdByClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
                 'seur_url_basepath' => seurLib::getBaseLink(),
             ));
 

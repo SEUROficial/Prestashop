@@ -71,25 +71,25 @@ class UpdateShipmentsStatus implements CommandHandler
 
     private function processSingleShipment(array $shipment)
     {
-        /* Consultar estado */
+        $shipment_errors = '';
+
         $response = $this->getShipmentStatus($shipment);
         if ($response === false || empty($response->data)) {
-            $this->error_messages .= ' # '.$shipment['id_order'].' - no response data';
-            $this->updateShipmentStatus($shipment, [], [], true);
-            return;
+            $shipment_errors .= ' # '.$shipment['id_order'].' - no response data';
         }
 
         $shipment_status = $this->parseShipmentStatusResponse($response);
         if ($shipment_status === false) {
-            $this->error_messages .= ' # ' . $shipment['id_order'] . ' - no 4 matches';
-            $this->updateShipmentStatus($shipment, [], [], true);
-            return;
+            $shipment_errors .= ' # ' . $shipment['id_order'] . ' - no 4 matches';
         }
 
         $expedition_status = SeurOrder::getStatusExpedition($shipment_status['tipo_situ'], (int)$shipment_status['cod_situ']);
         if ($expedition_status === false || !isset($expedition_status['id_status'])) {
-            //echo "Error al actualizar estado pedido ".$shipment['id_order']."<br/>";
-            $this->error_messages .= ' # ' . $shipment['id_order'] . ' - id_status vacío. tipo_situ: ' . $shipment_status['tipo_situ'] . ' - cod_situ: ' . $shipment_status['cod_situ'];
+            $shipment_errors .= ' # ' . $shipment['id_order'] . ' - id_status vacío. tipo_situ: ' . $shipment_status['tipo_situ'] . ' - cod_situ: ' . $shipment_status['cod_situ'];
+
+        }
+        if ($shipment_errors != '') {
+            $this->error_messages .= $shipment_errors;
             $this->updateShipmentStatus($shipment, [], [], true);
             return;
         }

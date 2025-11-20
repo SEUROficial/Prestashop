@@ -21,8 +21,8 @@
 				</div>
 				<div class="note_seur">{l s='Select carrier' mod='seur'}</div>
                 {else}
-                    {l s='No existen trasportistas adicionales. Es necesrio que añada nuevos transportistas accediendo a' mod='seur'}
-					<a href="{$url_carrier}">{l s='gestión de transportistas' mod='seur'}</a>
+                    {l s='There are no additional carriers. You must add new carriers by accessing' mod='seur'}
+					<a href="{$url_carrier}">{l s='Carrier Management' mod='seur'}</a>
                 {/if}
 				<div class="separador"></div>
 				<div class="label_seur uppercase">{l s='Shippping type' mod='seur'}</div>
@@ -31,7 +31,7 @@
                            {if $shipping_type==1 }checked{/if}> {l s='SEUR National' mod='seur'}
 					<br>
 					<input type="radio" name="type_service" value="2"
-                           {if $shipping_type==2 }checked{/if}> {l s='SEUR Puntos Pick Up' mod='seur'}
+                           {if $shipping_type==2 }checked{/if}> {l s='SEUR Pick Up Locations' mod='seur'}
 					<br>
 					<input type="radio" name="type_service" value="3"
                            {if $shipping_type==3 }checked{/if}> {l s='SEUR International' mod='seur'}

@@ -16,12 +16,6 @@ class AdminSeurTrackingController extends ModuleAdminController
     {
         $module = Module::getInstanceByName('seur');
 
-
-        if (Tools::version_compare(_PS_VERSION_, '1.7', '<')) {
-            $this->addJQuery();
-            $this->addJS($module->getPath() . 'views/js/seurController.js');
-        }
-
         $this->bootstrap = true;
         $this->name = 'AdminSeurTracking';
         $this->table = 'seur2_order';
@@ -38,7 +32,6 @@ class AdminSeurTrackingController extends ModuleAdminController
         $this->context = Context::getContext();
         $this->list_no_link = false;
         $this->page_header_toolbar_btn = array();
-
 
         $this->fields_list = array(
             'id_seur_order' => array(
@@ -150,20 +143,7 @@ class AdminSeurTrackingController extends ModuleAdminController
             Tools::redirectAdmin('index.php?controller=adminmodules&configure=seur&token=' . Tools::getAdminTokenLite('AdminModules') . '&module_name=seur&settings=1');
             die();
         }
-/*
-        if (Tools::getValue('action') == "print_label") {
-            $this->printLabel((int)Tools::getValue('id_order'),'pdf');
-            die();
-        }
 
-        if (Tools::getValue('massive_action') == "print_labels") {
-            $print_labels = $this->printLabels(Tools::getValue('seur2_orderBox'));
-        }
-
-        if (Tools::getValue('massive_action') == "manifest") {
-            $manifest = $this->manifest(Tools::getValue('seur2_orderBox'));
-        }
-*/
         $this->context->smarty->assign(
             array(
                 'url_module' => $this->context->link->getAdminLink('AdminModules', true) . "&configure=seur&module_name=seur",
@@ -171,38 +151,18 @@ class AdminSeurTrackingController extends ModuleAdminController
                 'url_controller_collecting' => $this->context->link->getAdminLink('AdminSeurCollecting', true),
                 'url_controller_tracking' => $this->context->link->getAdminLink('AdminSeurTracking', true),
                 'url_controller_returns' => $this->context->link->getAdminLink('AdminSeurReturns', true),
+                'url_controller_bulk_assign_carrier' => $this->context->link->getAdminLink('AdminSeurBulkAssignCarrier', true),
+                'url_controller_pickup_locations' => $this->context->link->getAdminLink('AdminSeurPickupLocations', true),
                 'img_path' => $this->module->getPath() . 'views/img/',
-                'module_path' => 'index.php?controller=AdminModules&configure=' . $this->module->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Tab::getIdFromClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
+                'module_path' => 'index.php?controller=AdminModules&configure=' . $this->module->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Seur::findTabIdByClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
                 'seur_url_basepath' => seurLib::getBaseLink(),
+                'bulk_assign_enabled' => Configuration::get('SEUR2_BULK_ASSIGN_CARRIER'),
+                'tabSelect' => 'tracking',
             ));
 
-        $selecttab = "tracking";
-        $this->context->smarty->assign(
-            array('tabSelect' => $selecttab)
-        );
 
         $smarty = $this->context->smarty;
         $html = "";
-
-        if(isset($print_labels) && count($print_labels))
-        {
-            $this->context->smarty->assign(
-                array('print_labels' => $print_labels)
-            );
-
-            $html .= $smarty->fetch(_PS_MODULE_DIR_ . 'seur/views/templates/admin/print_labels.tpl');;
-        }
-
-        if(isset($manifest))
-        {
-            $this->context->smarty->assign(
-                array('manifest' => $manifest)
-            );
-
-            $html .= $smarty->fetch(_PS_MODULE_DIR_ . 'seur/views/templates/admin/manifest.tpl');;
-        }
-
-
 
         $html .= $smarty->fetch(_PS_MODULE_DIR_ . 'seur/views/templates/admin/header.tpl');;
         $html .= $smarty->fetch(_PS_MODULE_DIR_ . 'seur/views/templates/admin/tabs.tpl');;
@@ -239,82 +199,6 @@ class AdminSeurTrackingController extends ModuleAdminController
         }
     }
 
-/*
-    public function renderList()
-    {
-        $this->context->smarty->assign(
-            array(
-                'url_module' => $this->context->link->getAdminLink('AdminModules', true) . "&configure=seur&module_name=seur",
-                'url_controller_shipping' => $this->context->link->getAdminLink('AdminSeurShipping', true),
-                'url_controller_collecting' => $this->context->link->getAdminLink('AdminSeurCollecting', true),
-                'url_controller_tracking' => $this->context->link->getAdminLink('AdminSeurTracking', true),
-                'url_controller_returns' => $this->context->link->getAdminLink('AdminSeurReturns', true),
-                'img_path' => $this->module->getPath() . 'views/img/',
-                'module_path' => 'index.php?controller=AdminModules&configure=' . $this->module->name . '&token=' . Tools::getAdminToken("AdminModules" . (int)(Tab::getIdFromClassName("AdminModules")) . (int)$this->context->cookie->id_employee),
-                'seur_url_basepath' => seurLib::getBaseLink(),
-            ));
-
-        $selecttab = "tracking";
-        $this->context->smarty->assign(
-            array('tabSelect' => $selecttab)
-        );
-        $page = $this->renderTracking();
-
-        $smarty = $this->context->smarty;
-        $html = "";
-
-        $html .= $smarty->fetch(_PS_MODULE_DIR_ . 'seur/views/templates/admin/header.tpl');;
-        $html .= $smarty->fetch(_PS_MODULE_DIR_ . 'seur/views/templates/admin/tabs.tpl');;
-        $html .= $page;
-        return $html;
-    }
-*/
-/*
-    public function renderTracking()
-    {
-
-
-        $helper = new HelperList();
-
-
-        $helper->shopLinkType = '';
-        $helper->no_link = true;
-        $helper->simple_header = false;
-
-        // Actions to be displayed in the "Actions" column
-        $helper->actions = array('view','delete');
-
-        $helper->identifier = 'id_seur_order';
-        $helper->_default_pagination = 20;
-        $helper->_defaultOrderBy = 'date';
-        $helper->_defaultOrderWay = 'DESC';
-        $helper->show_toolbar = true;
-        $helper->table = 'seur2_order';
-        $helper->className = 'SeurOrder';
-        $helper->title = $this->l('Tracking packages');
-        $helper->token = Tools::getAdminTokenLite('AdminSeurTracking');
-        $helper->currentIndex = AdminController::$currentIndex . '&shipping=1';
-        $helper->module = $this->module;
-
-
-        $sql = 'SELECT a.*,CONCAT(a.firstname," ",a.lastname) as customer_name, s.name as order_status_name, o.date_add as order_date, o.reference, c.name as country, st.name as state
-			FROM `' . _DB_PREFIX_ . 'seur2_order` a
-			LEFT JOIN `' . _DB_PREFIX_ . 'orders` o ON a.id_order = o.id_order
-			LEFT JOIN `' . _DB_PREFIX_ . 'order_state_lang` s ON s.id_order_state = o.current_state AND s.id_lang=' . (int)Context::getContext()->language->id . '
-			LEFT JOIN `' . _DB_PREFIX_ . 'country_lang` c ON c.id_country = a.id_country AND c.id_lang=' . (int)Context::getContext()->language->id . '
-			LEFT JOIN `' . _DB_PREFIX_ . 'state` st ON st.id_state = a.id_state
-			WHERE a.id_status != 0';
-
-
-        $content = Db::getInstance()->executeS($sql);
-
-        $this->context->smarty->assign('has_bulk_actions', false);
-
-        $html = $helper->generateList($content, $this->fields_list);
-
-        return $html;
-    }
-*/
     public function renderView(){
         $seurOrder = new SeurOrder(Tools::getValue('id_seur_order'));
         $url = Context::getContext()->link->getAdminLink(

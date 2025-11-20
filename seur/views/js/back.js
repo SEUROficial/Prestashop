@@ -176,7 +176,7 @@ $(document).ready(function () {
             headers: {"cache-control": "no-cache"},
             async: false,
             url: window.seur_tracking_url,
-            data: '',
+            data: { ajax: 1 },
             dataType: "json",
             error: function (data) {
                 $('html, body').css("cursor", "default");
@@ -209,19 +209,11 @@ $(document).ready(function () {
             clearInterval(seur.reloadTimer);
     }, seur.reloadTimerIntervalSeconds * 1000);
 
-    $("#massive_change").on('change',function () {
-       var valor = $("#massive_change").val();
-
-       if(valor == "change_ccc")
-            $(".cambio-masivo-ccc").show();
-       else
-           $(".cambio-masivo-ccc").hide();
-    });
 });
 
 $(document).on('change',"input[name='type_service']", function(){
     var id = $("input[name='type_service']:checked").val();
-   reloadServicesAndProducts(id);
+    reloadServicesAndProducts(id);
 });
 $(document).on('change',"select[name='type_service']", function(){
     var id = $("select[name='type_service']").val();
@@ -234,6 +226,11 @@ $(document).ready(function(){
 })
 
 function reloadServicesAndProducts(id){
+    $("#divPudoId").hide();
+    if (id == 2) {
+        $("#divPudoId").show();
+    }
+
     $.ajax({
         type: 'POST',
         headers: {"cache-control": "no-cache"},
