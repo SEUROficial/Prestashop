@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2.5.26] - 2025-12-16
+### Added
+- Add config option to recalculate shipment cost in order capture
+
 ## [2.5.25] - 2025-11-17
 ### Added
 - Massive assign carrier to orders without carrier

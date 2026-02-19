@@ -192,7 +192,7 @@ class AdminSeurShippingController extends ModuleAdminController
         }
 
         if ((int)Tools::getValue('AddNewOrder')){
-            if (SeurOrder::addOrder((int)Tools::getValue('AddNewOrder'),(int)Tools::getValue('seur_carrier'))) {
+            if (SeurOrder::addOrder((int)Tools::getValue('AddNewOrder'), (int)Tools::getValue('seur_carrier'), (bool)Configuration::get("SEUR2_RECALCULATE_SHIPMENT_COST" )??0)) {
                 SeurLib::showMessageOK($this, 'Se ha cambiado el pedido para envío con Seur');
             } else {
                 SeurLib::showMessageError($this, 'No se ha podido cambiar el pedido para envío con Seur');

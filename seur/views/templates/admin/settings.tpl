@@ -217,7 +217,7 @@
 
         <div class="title_seur col-xs-12">{l s="Capture orders from other carriers" mod='seur'}</div>
         <div class="box_seur col_xs_12 row">
-            <div class="col-xs-12 col-md-12 col-lg-12">
+            <div class="col-xs-12 col-md-6 col-lg-6">
                 <div class="label_seur">{l s='Active capture orders' mod='seur'}</div>
                 <div class="input_seur">
                 <span class="switch prestashop-switch fixed-width-lg">
@@ -231,10 +231,24 @@
                 </span>
                 </div>
             </div>
+            <div class="col-xs-12 col-md-6 col-lg-6">
+                <div class="label_seur">{l s='Recalculate shipment cost' mod='seur'}</div>
+                <div class="input_seur">
+                <span class="switch prestashop-switch fixed-width-lg">
+                        <input type="radio" name="SEUR2_RECALCULATE_SHIPMENT_COST" id="recalculateShipment_on" value="1"
+                               {if $recalculateShipment}checked="checked"{/if}>
+                        <label for="recalculateShipment_on" class="radioCheck">{l s="Yes" mod="seur"}</label>
+                        <input type="radio" name="SEUR2_RECALCULATE_SHIPMENT_COST" id="recalculateShipment_off" value="0"
+                               {if !$recalculateShipment}checked="checked"{/if}>
+                        <label for="recalculateShipment_off" class="radioCheck">{l s="No" mod="seur"}</label>
+                        <a class="slide-button btn"></a>
+                </span>
+                </div>
+            </div>
         </div>
         <div class="title_seur col-xs-12">{l s="Enable bulk carrier assignment" mod='seur'}</div>
         <div class="box_seur col_xs_12 row">
-            <div class="col-xs-12 col-md-12 col-lg-12">
+            <div class="col-xs-12 col-md-6 col-lg-6">
                 <div class="label_seur">{l s='Active' mod='seur'}</div>
                 <div class="input_seur">
                 <span class="switch prestashop-switch fixed-width-lg">
@@ -247,6 +261,9 @@
                         <a class="slide-button btn"></a>
                 </span>
                 </div>
+            </div>
+            <div class="col-xs-12 col-md-6 col-lg-6">
+                <div class="label_seur">{l s='This never change shipment cost' mod='seur'}</div>
             </div>
         </div>
 

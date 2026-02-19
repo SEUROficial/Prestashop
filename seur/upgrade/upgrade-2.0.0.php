@@ -144,7 +144,7 @@ function upgrade_module_2_0_0($module)
     Configuration::updateValue("SEUR2_SETTINGS_PICKUP", $seurPuntosVenta);
     Configuration::updateValue("SEUR2_GOOGLE_API_KEY", "");
     Configuration::updateValue("SEUR2_CAPTURE_ORDER", 1);
-
+    Configuration::updateValue("SEUR2_RECALCULATE_SHIPMENT_COST", 0);
 
 
     // INCORPORAMOS LOS DATOS DEL MERCHANT

@@ -55,7 +55,7 @@ class Seur extends CarrierModule
     {
         $this->name = 'seur';
         $this->tab = 'shipping_logistics';
-        $this->version = '2.5.25';
+        $this->version = '2.5.26';
         $this->author = 'Seur';
         $this->need_instance = 0;
 
@@ -1400,7 +1400,7 @@ class Seur extends CarrierModule
         Configuration::updateValue("SEUR2_SETTINGS_PICKUP", SeurLib::getValue("SEUR2_SETTINGS_PICKUP"));
         Configuration::updateValue("SEUR2_GOOGLE_API_KEY", SeurLib::getValue("SEUR2_GOOGLE_API_KEY"));
         Configuration::updateValue("SEUR2_CAPTURE_ORDER", SeurLib::getValue("SEUR2_CAPTURE_ORDER"));
-        Configuration::updateValue("SEUR2_STATUS_DELIVERED", SeurLib::getValue("select_status_SEUR2_STATUS_DELIVERED"));
+        Configuration::updateValue("SEUR2_RECALCULATE_SHIPMENT_COST", SeurLib::getValue("SEUR2_RECALCULATE_SHIPMENT_COST"));
         Configuration::updateValue("SEUR2_STATUS_IN_TRANSIT", SeurLib::getValue("select_status_SEUR2_STATUS_IN_TRANSIT"));
         Configuration::updateValue("SEUR2_STATUS_INCIDENCE", SeurLib::getValue("select_status_SEUR2_STATUS_INCIDENCE"));
         Configuration::updateValue("SEUR2_STATUS_RETURN_IN_PROGRESS", SeurLib::getValue("select_status_SEUR2_STATUS_RETURN_IN_PROGRESS"));
@@ -1549,6 +1549,7 @@ class Seur extends CarrierModule
                 'status_delivered' => Configuration::get('SEUR2_STATUS_DELIVERED'),
                 'google_key' => Configuration::get('SEUR2_GOOGLE_API_KEY'),
                 'capture_order' => Configuration::get('SEUR2_CAPTURE_ORDER'),
+                'recalculateShipment' => Configuration::get('SEUR2_RECALCULATE_SHIPMENT_COST')??0,
                 'auto_create_labels' => Configuration::get('SEUR2_AUTO_CREATE_LABELS'),
                 'auto_create_labels_payments_methods_available' => $auto_create_labels_payments_methods_available,
                 'auto_calculate_packages' => Configuration::get('SEUR2_AUTO_CALCULATE_PACKAGES'),
